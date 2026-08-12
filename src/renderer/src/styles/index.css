@@ -1,0 +1,58 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-bg: #0b0d12;
+  --color-surface: #12151d;
+  --color-surface-2: #181c26;
+  --color-border: #232836;
+  --color-text: #e6e9f0;
+  --color-muted: #8b93a7;
+  --color-accent: #6d7cff;
+  --color-accent-soft: #2a2f4d;
+  --color-danger: #ff6b6b;
+  --color-ok: #4ade80;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family:
+    'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  overflow: hidden;
+}
+
+/* Barras de scroll discretas, acordes al tema oscuro. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2f3547;
+}
+
+/* La barra de titulo se arrastra desde la zona superior. */
+.drag-region {
+  -webkit-app-region: drag;
+}
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+input[type='range'] {
+  accent-color: var(--color-accent);
+}

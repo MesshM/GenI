@@ -1,0 +1,40 @@
+appId: com.messhm.geni
+productName: GenI
+copyright: Copyright © 2026 MesshM
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - out/**/*
+  - package.json
+
+extraResources:
+  - from: resources
+    to: resources
+
+# Sin firma de codigo: Windows mostrara SmartScreen la primera vez.
+# Es esperable en apps propias sin certificado (cuesta ~300 USD/anio).
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  artifactName: ${productName}-${version}-${arch}.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: GenI
+  # Preserva los datos del usuario entre actualizaciones:
+  # la base y los ajustes viven en %APPDATA%\geni, no en la carpeta del programa.
+  deleteAppDataOnUninstall: false
+
+publish:
+  provider: github
+  owner: MesshM
+  repo: GenI
+  releaseType: release

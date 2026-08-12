@@ -1,0 +1,7 @@
+# Paquetes autorizados a ejecutar scripts de instalacion.
+# electron descarga su binario en postinstall; sin esto la app no arranca.
+# electron-winstaller no hace falta: empaquetamos con NSIS.
+allowBuilds:
+  electron: true
+  esbuild: true
+  electron-winstaller: false
