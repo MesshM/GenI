@@ -48,7 +48,14 @@ export const CH = {
   updDownload: 'upd:download',
   updInstall: 'upd:install',
 
-  appVersion: 'app:version'
+  appVersion: 'app:version',
+
+  translateEsToEn: 'translate:esToEn',
+
+  windowMinimize: 'window:minimize',
+  windowToggleMaximize: 'window:toggleMaximize',
+  windowClose: 'window:close',
+  windowIsMaximized: 'window:isMaximized'
 } as const
 
 /** Eventos que empuja el proceso principal hacia la interfaz. */
@@ -57,7 +64,8 @@ export const EV = {
   genProgress: 'ev:genProgress',
   genMessage: 'ev:genMessage',
   updState: 'ev:updState',
-  modelDownload: 'ev:modelDownload'
+  modelDownload: 'ev:modelDownload',
+  windowMaximized: 'ev:windowMaximized'
 } as const
 
 export type InvokeChannel = (typeof CH)[keyof typeof CH]

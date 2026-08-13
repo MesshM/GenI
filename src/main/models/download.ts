@@ -184,9 +184,13 @@ async function resolveUrl(raw: string): Promise<Resolved> {
     throw new Error('Esa no es una URL valida')
   }
 
-  if (url.hostname.endsWith('civitai.com')) return resolveCivitai(url)
+  // civitai.red es la variante NSFW del mismo sitio; la API que se
+  // consulta abajo sigue siendo civitai.com en los dos casos.
+  if (url.hostname.endsWith('civitai.com') || url.hostname.endsWith('civitai.red')) {
+    return resolveCivitai(url)
+  }
   if (url.hostname.endsWith('huggingface.co')) return resolveHuggingFace(url)
-  throw new Error('Solo se admiten enlaces de civitai.com o huggingface.co')
+  throw new Error('Solo se admiten enlaces de civitai.com, civitai.red o huggingface.co')
 }
 
 async function resolveCivitai(url: URL): Promise<Resolved> {

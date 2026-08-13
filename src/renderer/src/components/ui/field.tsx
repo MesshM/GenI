@@ -9,8 +9,11 @@ import { useAutoGrow } from '@/lib/useAutoGrow'
 // bg-white/* es literal (no un token que docline re-tina en oscuro): sin el
 // dark: de al lado quedaria un recuadro gris claro con texto casi blanco
 // encima, poco legible. En oscuro va translucido sobre negro, no blanco.
+// La sombra interior era rgba(38,54,110,...) (azul-marino fijo, no un token):
+// se veia siempre, incluso en oscuro, y no cambiaba con el tema. Neutra en
+// negro puro, como el resto de las sombras que ya se redefinen en oscuro.
 const CONTROL =
-  'w-full rounded-chip border border-line/70 bg-white/70 px-3 py-2 text-[13.7px] text-ink-800 shadow-[inset_0_1px_2px_rgba(38,54,110,0.04)] outline-none transition-[border-color,box-shadow,background] duration-200 placeholder:text-ink-400 focus:border-halo/50 focus:bg-white focus:ring-4 focus:ring-halo/14 disabled:opacity-50 dark:bg-white/6 dark:focus:bg-white/10'
+  'w-full rounded-chip border border-line/70 bg-white/70 px-3 py-2 text-[13.7px] text-ink-800 shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] outline-none transition-[border-color,box-shadow,background] duration-200 placeholder:text-ink-400 focus:border-halo/50 focus:bg-white focus:ring-4 focus:ring-halo/14 disabled:opacity-50 dark:bg-white/6 dark:focus:bg-white/10'
 
 function Label({
   children,
@@ -80,7 +83,7 @@ export function TextArea({
   value,
   ...rest
 }: TextAreaProps): React.JSX.Element {
-  // Autogrow en vez de tirador manual: crece con lo que se escribe.
+  // Autogrow sin tope ni scroll interno: crece con el texto, sin limite.
   const autoRef = useAutoGrow(typeof value === 'string' ? value : '')
 
   return (
@@ -90,11 +93,7 @@ export function TextArea({
         ref={autoRef}
         value={value}
         rows={1}
-        className={cn(
-          CONTROL,
-          'scroll max-h-[280px] min-h-[76px] resize-none overflow-y-auto leading-relaxed',
-          className
-        )}
+        className={cn(CONTROL, 'min-h-[76px] resize-none overflow-hidden leading-relaxed', className)}
         {...rest}
       />
       {hint && <p className="mt-1 text-[11.6px] leading-snug text-ink-400">{hint}</p>}
@@ -113,7 +112,7 @@ interface SliderProps {
   tip?: string
   /** Compacto: usado dentro de las tarjetas de LoRA. */
   dense?: boolean
-  /** Ancho del contador numerico. Por defecto 70px; la semilla usa mas. */
+  /** Ancho del contador numerico. Por defecto 76px; la semilla usa mas. */
   counterWidth?: number
 }
 
@@ -134,7 +133,7 @@ export function Slider({
   hint,
   tip,
   dense,
-  counterWidth = 70
+  counterWidth = 76
 }: SliderProps): React.JSX.Element {
   const clamp = (n: number): number => Math.min(max, Math.max(min, n))
   const bump = (delta: number): void => onChange(clamp(roundToStep(value + delta, step)))
@@ -151,14 +150,13 @@ export function Slider({
             max={max}
             step={step}
             onChange={(e) => onChange(clamp(Number(e.target.value)))}
-            // pr-[24px] deja hueco fijo para la columna de flechas: antes el
-            // valor quedaba pegado porque el padding no alcanzaba a cubrirla.
+            // py-[5px] (antes 8px) baja el alto de la caja; pr-[24px] deja
+            // hueco para una columna de flechas mas ANCHA (antes angosta),
+            // que es lo que de verdad necesitaban para entrar comodas.
             className="w-full rounded-[8px] border border-line/70 bg-white/80 py-[5px] pl-2 pr-[24px] text-right text-[12.6px] font-bold text-ink-800 outline-none focus:border-halo/50 focus:ring-2 focus:ring-halo/14 dark:bg-white/6"
           />
-          {/* Flechas propias: las del navegador no se pueden estilar. Ocupan
-              todo el alto (antes quedaban de 3px de margen = ~6px total, muy
-              poco para mostrar las dos, la de bajar se recortaba). */}
-          <div className="absolute inset-y-0 right-0 flex w-[21px] flex-col overflow-hidden rounded-r-[7px] border-l border-line/50">
+          {/* Flechas propias: las del navegador no se pueden estilar. */}
+          <div className="absolute inset-y-0 right-0 flex w-[22px] flex-col overflow-hidden rounded-r-[7px] border-l border-line/50">
             <button
               type="button"
               tabIndex={-1}
@@ -166,7 +164,7 @@ export function Slider({
               onClick={() => bump(step)}
               className="flex flex-1 items-center justify-center bg-black/[0.03] text-ink-400 transition-colors hover:bg-tint/20 hover:text-cobalt-600 dark:bg-white/6 dark:hover:bg-white/16"
             >
-              <Icon name="arrow_drop_up" className="text-[14px]" />
+              <Icon name="arrow_drop_up" className="text-[12px]" />
             </button>
             <button
               type="button"
@@ -175,7 +173,7 @@ export function Slider({
               onClick={() => bump(-step)}
               className="flex flex-1 items-center justify-center border-t border-line/40 bg-black/[0.03] text-ink-400 transition-colors hover:bg-tint/20 hover:text-cobalt-600 dark:bg-white/6 dark:hover:bg-white/16"
             >
-              <Icon name="arrow_drop_down" className="text-[14px]" />
+              <Icon name="arrow_drop_down" className="text-[12px]" />
             </button>
           </div>
         </div>

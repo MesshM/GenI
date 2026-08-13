@@ -3,6 +3,7 @@ import { PARAMS_MAX, PARAMS_MIN, useStore } from '../store/useStore'
 import { Icon } from './ui/icon'
 import { Section, Slider, Switch, TextArea } from './ui/field'
 import { Select } from './ui/select'
+import { TranslateButton } from './ui/translate-button'
 import { Resizer } from './ui/resizer'
 import { aspectRatioLabel, cn } from '@/lib/utils'
 
@@ -22,7 +23,7 @@ function RatioShape({
   const boxH = Math.max(6, Math.round(height * scale))
 
   return (
-    <span className="flex h-[26px] items-center justify-center">
+    <span className="flex h-6.5 items-center justify-center">
       <span
         className={cn(
           'rounded-[3px] border-2',
@@ -259,19 +260,21 @@ export default function ParamsPanel(): React.JSX.Element {
                         </p>
                         <div className="flex flex-wrap gap-1">
                           {model.triggerWords.map((word) => {
-                            const active = lora.trigger === word
+                            const active = lora.triggers.includes(word)
                             return (
                               <button
                                 key={word}
                                 onClick={() =>
                                   patchLora(lora.modelId, {
-                                    trigger: active ? undefined : word
+                                    triggers: active
+                                      ? lora.triggers.filter((w) => w !== word)
+                                      : [...lora.triggers, word]
                                   })
                                 }
                                 title={
                                   active
                                     ? 'Se agrega al prompt. Clic para quitarla.'
-                                    : 'Clic para agregarla al prompt.'
+                                    : 'Clic para agregarla al prompt. Se pueden activar varias.'
                                 }
                                 className={cn(
                                   'rounded-full px-2 py-0.5 text-[10.5px] font-bold transition-colors',
@@ -298,7 +301,8 @@ export default function ParamsPanel(): React.JSX.Element {
         {!isFlux && (
           <Section
             title="Prompt negativo"
-            tip="Lo que no queres ver en la imagen. El modelo evita estos elementos."
+            tip="Lo que no quieres ver en la imagen. El modelo evita estos elementos."
+            action={<TranslateButton text={negative} onTranslated={setNegative} />}
           >
             <TextArea
               value={negative}

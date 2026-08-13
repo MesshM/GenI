@@ -100,6 +100,16 @@ const api: GenIApi = {
   },
   app: {
     version: () => ipcRenderer.invoke(CH.appVersion) as Promise<string>
+  },
+  window: {
+    minimize: () => ipcRenderer.invoke(CH.windowMinimize) as Promise<void>,
+    toggleMaximize: () => ipcRenderer.invoke(CH.windowToggleMaximize) as Promise<void>,
+    close: () => ipcRenderer.invoke(CH.windowClose) as Promise<void>,
+    isMaximized: () => ipcRenderer.invoke(CH.windowIsMaximized) as Promise<boolean>,
+    onMaximizedChange: (cb) => subscribe<boolean>(EV.windowMaximized, cb)
+  },
+  translate: {
+    esToEn: (text) => ipcRenderer.invoke(CH.translateEsToEn, text) as Promise<string>
   }
 }
 

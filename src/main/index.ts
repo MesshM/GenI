@@ -11,6 +11,7 @@ import { compressConversation, resolveFromZip } from './conversations/archive'
 import { getLastActiveConversation, getSettings } from './settings'
 import { presetsImagesRoot } from './presets/manager'
 import { updater } from './updater'
+import { EV } from '@shared/channels'
 
 const IMAGE_SCHEME = 'geni-file'
 
@@ -21,6 +22,11 @@ protocol.registerSchemesAsPrivileged([
 
 let mainWindow: BrowserWindow | null = null
 
+// En empaquetado ya viene el icono grabado en el .exe (via win.icon de
+// electron-builder), pero BrowserWindow igual necesita esto para mostrarlo
+// en pnpm dev/start, donde el proceso corre como electron.exe generico.
+const APP_ICON = join(app.getAppPath(), 'resources/icon.png')
+
 function createWindow(): void {
   mainWindow = new BrowserWindow({
     width: 1440,
@@ -28,9 +34,13 @@ function createWindow(): void {
     minWidth: 1100,
     minHeight: 700,
     show: false,
-    autoHideMenuBar: true,
+    // Sin marco nativo: la TopBar dibuja sus propios botones de
+    // minimizar/maximizar/cerrar para poder recolorearlos segun el tema
+    // (el overlay nativo de Windows solo admite un color plano fijo).
+    frame: false,
     backgroundColor: '#0b0d12',
     title: 'GenI',
+    icon: APP_ICON,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       // El renderer no ve Node ni el modulo electron. Solo la superficie
@@ -46,6 +56,11 @@ function createWindow(): void {
   mainWindow.on('closed', () => {
     mainWindow = null
   })
+
+  // Para que el boton de maximizar/restaurar de la TopBar sepa que icono
+  // mostrar, sin tener que preguntar cada vez.
+  mainWindow.on('maximize', () => mainWindow?.webContents.send(EV.windowMaximized, true))
+  mainWindow.on('unmaximize', () => mainWindow?.webContents.send(EV.windowMaximized, false))
 
   // Nada de ventanas nuevas: los enlaces externos van al navegador del sistema.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {

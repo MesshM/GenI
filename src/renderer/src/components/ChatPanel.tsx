@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useStore } from '../store/useStore'
 import MessageBubble from './MessageBubble'
-import TriggerWordsBar from './TriggerWordsBar'
 import { Icon } from './ui/icon'
 import { Button } from './ui/button'
+import { TranslateButton } from './ui/translate-button'
 import { useAutoGrow } from '@/lib/useAutoGrow'
 
 export default function ChatPanel(): React.JSX.Element {
@@ -47,10 +47,10 @@ export default function ChatPanel(): React.JSX.Element {
               <Icon name="auto_awesome" filled className="text-[29.4px] text-cobalt-500" />
             </span>
             <p className="mt-4 text-[17.9px] font-extrabold tracking-tight text-ink-800">
-              Escribi un prompt para empezar
+              Escribe un prompt para empezar
             </p>
             <p className="mt-1.5 text-[13.7px] leading-snug text-ink-500">
-              Los parametros de la izquierda se aplican a cada generacion. Podes cambiarlos entre
+              Los parametros de la izquierda se aplican a cada generacion. Puedes cambiarlos entre
               mensaje y mensaje sin perder la conversacion.
             </p>
           </div>
@@ -66,8 +66,9 @@ export default function ChatPanel(): React.JSX.Element {
 
       <div className="mx-auto mt-3 w-full max-w-2xl px-4">
         <div className="glass-strong rounded-panel p-2.5 shadow-lift">
-          {/* Autogrow: crece con el texto hasta 320px, despues scrollea con
-              barra fina propia. Sin tirador manual. */}
+          {/* Autogrow sin tope ni scroll interno: crece con el texto, sin
+              limite. Se siente raro tener un scroll adentro de una caja que
+              ya crece sola. */}
           <textarea
             ref={promptRef}
             value={prompt}
@@ -79,18 +80,18 @@ export default function ChatPanel(): React.JSX.Element {
                 ? 'Esperando a que ComfyUI este listo...'
                 : recipes.length === 0
                   ? 'Instala un modelo para poder generar'
-                  : 'Describi la imagen... (Enter para enviar, Shift+Enter para salto de linea)'
+                  : 'Describe la imagen... (Enter para enviar, Shift+Enter para salto de linea)'
             }
             disabled={!ready}
-            className="scroll min-h-[52px] max-h-[320px] w-full resize-none overflow-y-auto bg-transparent px-2 py-1.5 text-[14.7px] leading-relaxed text-ink-800 outline-none placeholder:text-ink-400 disabled:opacity-50"
+            className="w-full resize-none overflow-hidden bg-transparent px-2 py-1.5 text-[14.7px] leading-relaxed text-ink-800 outline-none placeholder:text-ink-400 disabled:opacity-50"
           />
-          <div className="px-1 pb-1 pt-1">
-            <TriggerWordsBar />
-          </div>
           <div className="flex items-center justify-between gap-2 px-1">
-            <span className="text-[11.6px] font-semibold text-ink-400">
-              {prompt.trim().split(/\s+/).filter(Boolean).length} palabras
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-[11.6px] font-semibold text-ink-400">
+                {prompt.trim().split(/\s+/).filter(Boolean).length} palabras
+              </span>
+              <TranslateButton text={prompt} onTranslated={setPrompt} />
+            </div>
             <Button
               size="sm"
               icon="auto_awesome"

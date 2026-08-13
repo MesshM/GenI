@@ -8,7 +8,16 @@ directories:
 
 files:
   - out/**/*
+  - resources/**/*
   - package.json
+
+# sharp (recompresion PNG->WEBP) y onnxruntime-node (traductor local) traen
+# binarios nativos; un .node/.dll no se puede requerir desde dentro del asar.
+asarUnpack:
+  - node_modules/sharp/**/*
+  - node_modules/@img/**/*
+  - node_modules/onnxruntime-node/**/*
+  - node_modules/@huggingface/transformers/**/*
 
 # Sin extraResources: las recetas se derivan de los modelos instalados,
 # no hay JSON que empaquetar.
@@ -16,6 +25,9 @@ files:
 # Sin firma de codigo: Windows mostrara SmartScreen la primera vez.
 # Es esperable en apps propias sin certificado (cuesta ~300 USD/anio).
 win:
+  # PNG cuadrado (>=256px); electron-builder lo convierte solo a .ico para
+  # el exe, el instalador y el desinstalador (mismo icono en los tres).
+  icon: build/icon.png
   target:
     - target: nsis
       arch: [x64]

@@ -1,10 +1,11 @@
 import { EventEmitter } from 'node:events'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { conversationsRepo, generationsRepo, messagesRepo } from '../db/repositories'
 import { getSettings } from '../settings'
 import { comfyClient, type ComfyImageRef } from './client'
 import { getRecipe } from './recipes'
 import { buildWorkflow } from './builder'
+import { convertPngToWebp } from './webp'
 import type { ComfyWorkflow, GenerationProgress, Message, SubmitInput } from '@shared/types'
 
 interface InFlight {
@@ -169,11 +170,14 @@ class Generator extends EventEmitter {
     const outputRoot = join(getSettings().comfyPath, 'output')
 
     for (const img of list) {
+      const pngAbsPath = join(outputRoot, img.subfolder ?? '', img.filename)
+      const webpAbsPath = await convertPngToWebp(pngAbsPath)
+
       generationsRepo.create({
         messageId: job.messageId,
-        filename: img.filename,
+        filename: basename(webpAbsPath),
         subfolder: img.subfolder ?? '',
-        absPath: join(outputRoot, img.subfolder ?? '', img.filename),
+        absPath: webpAbsPath,
         width: message?.params.width ?? 0,
         height: message?.params.height ?? 0,
         seed: message?.params.seed ?? 0

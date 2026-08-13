@@ -1,6 +1,6 @@
 {
   "name": "geni",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Interfaz de chat para generar imagenes con ComfyUI en local",
   "main": "./out/main/index.js",
   "author": "MesshM",
@@ -21,8 +21,10 @@
     "release": "pnpm build && electron-builder --win --publish always"
   },
   "dependencies": {
+    "@huggingface/transformers": "^4.2.0",
     "adm-zip": "^0.6.0",
-    "electron-updater": "6.8.9"
+    "electron-updater": "6.8.9",
+    "sharp": "^0.35.3"
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.3.3",

@@ -149,7 +149,7 @@ export function Modal({
         <>
           <motion.div
             key={`backdrop-${uniqueId}`}
-            className="fixed inset-0 z-[69] bg-[oklch(0.3_0.03_264/0.45)] backdrop-blur-[6px]"
+            className="fixed inset-0 z-69 bg-[oklch(0.3_0.03_264/0.45)] backdrop-blur-[6px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -157,7 +157,7 @@ export function Modal({
             onClick={closeOnBackdrop ? () => setIsOpen(false) : undefined}
           />
 
-          <div className="pointer-events-none fixed inset-0 z-[70] flex items-center justify-center p-4">
+          <div className="pointer-events-none fixed inset-0 z-70 flex items-center justify-center p-4">
             <motion.div
               layoutId={`modal-${uniqueId}`}
               className={cn(
@@ -173,7 +173,7 @@ export function Modal({
               exit={{ opacity: 0 }}
             >
               {(title || showClose) && (
-                <div className="flex shrink-0 items-center gap-3 border-b border-line/45 py-4 pl-5 pr-[18px]">
+                <div className="flex shrink-0 items-center gap-3 border-b border-line/45 py-4 pl-5 pr-4.5">
                   <span className="min-w-0 flex-1 text-[17.9px] font-extrabold tracking-[-0.02em] text-ink-900">
                     {title}
                   </span>

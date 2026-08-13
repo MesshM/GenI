@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useStore, imageUrl } from '../store/useStore'
 import { Icon } from './ui/icon'
 import { Button } from './ui/button'
+import { ImageWithSkeleton } from './ui/image'
 import { Modal, ModalRoot, ModalTrigger } from './ui/modal'
 import { TextField } from './ui/field'
 import { cn } from '@/lib/utils'
@@ -108,9 +109,10 @@ export default function PresetsView(): React.JSX.Element {
                 )}
               >
                 {imagePath ? (
-                  <img
+                  <ImageWithSkeleton
                     src={imageUrl(imagePath)}
                     alt=""
+                    wrapperClassName="h-full w-full"
                     className="h-full w-full object-cover"
                   />
                 ) : (
@@ -160,9 +162,10 @@ export default function PresetsView(): React.JSX.Element {
                 >
                   <div className="flex h-36 items-center justify-center bg-fog/15">
                     {p.referenceImagePath ? (
-                      <img
+                      <ImageWithSkeleton
                         src={imageUrl(p.referenceImagePath)}
                         alt=""
+                        wrapperClassName="h-full w-full"
                         className="h-full w-full object-cover"
                       />
                     ) : (
@@ -192,7 +195,7 @@ export default function PresetsView(): React.JSX.Element {
 
       {confirmId && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-ink-900/25 p-6 backdrop-blur-sm">
-          <div className="glass-strong w-full max-w-sm rounded-panel p-5 shadow-deep">
+          <div className="glass-strong w-full max-w-sm rounded-panel p-5 shadow-glass-lg">
             <h3 className="text-[15px] font-extrabold text-ink-900">Eliminar preset</h3>
             <p className="mt-2 text-[13px] leading-snug text-ink-600">
               Se borra la configuracion guardada y su imagen de referencia. No afecta a las

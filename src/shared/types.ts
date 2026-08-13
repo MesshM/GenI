@@ -99,8 +99,8 @@ export interface LoraSetting {
   label: string
   strength: number
   enabled: boolean
-  /** Palabra que se antepone al prompt cuando esta activa. */
-  trigger?: string
+  /** Palabras que se anteponen al prompt cuando esta activa. Puede ser mas de una. */
+  triggers: string[]
 }
 
 export interface GenerationParams {
@@ -304,5 +304,16 @@ export interface GenIApi {
   }
   app: {
     version(): Promise<string>
+  }
+  translate: {
+    /** Traduce espanol a ingles con un modelo local (Helsinki-NLP opus-mt). */
+    esToEn(text: string): Promise<string>
+  }
+  window: {
+    minimize(): Promise<void>
+    toggleMaximize(): Promise<void>
+    close(): Promise<void>
+    isMaximized(): Promise<boolean>
+    onMaximizedChange(cb: (maximized: boolean) => void): () => void
   }
 }

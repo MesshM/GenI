@@ -57,8 +57,8 @@ export function buildWorkflow(input: BuildInput): ComfyWorkflow {
 /** Las palabras de activacion de las LoRAs encendidas van al principio del prompt. */
 function withTriggers(prompt: string, params: GenerationParams): string {
   const triggers = params.loras
-    .filter((l) => l.enabled && l.trigger)
-    .map((l) => l.trigger as string)
+    .filter((l) => l.enabled)
+    .flatMap((l) => l.triggers)
   return [...triggers, prompt].filter(Boolean).join(', ')
 }
 

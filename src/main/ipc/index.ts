@@ -1,11 +1,13 @@
 import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, shell } from 'electron'
 import { copyFile } from 'node:fs/promises'
-import { basename } from 'node:path'
+import { basename, extname } from 'node:path'
+import sharp from 'sharp'
 import { CH, EV } from '@shared/channels'
 import { conversationsRepo, messagesRepo } from '../db/repositories'
 import { comfyProcess } from '../comfy/process'
 import { comfyClient } from '../comfy/client'
 import { generator } from '../comfy/generator'
+import { translateEsToEn } from '../translate/translate'
 import { listRecipes } from '../comfy/recipes'
 import {
   deleteModel,
@@ -90,7 +92,9 @@ function asSubmitInput(v: unknown): SubmitInput {
               label: asString(lo.label ?? '', 'lora.label', 200),
               strength: Number.isFinite(strength) ? Math.min(2, Math.max(0, strength)) : 0,
               enabled: Boolean(lo.enabled),
-              trigger: typeof lo.trigger === 'string' ? lo.trigger : undefined
+              triggers: Array.isArray(lo.triggers)
+                ? lo.triggers.map((w) => asString(w, 'lora.trigger', 100)).filter(Boolean).slice(0, 12)
+                : []
             }
           })
         : []
@@ -284,8 +288,13 @@ export function registerIpc(getWindow: () => BrowserWindow | null): void {
     shell.showItemInFolder(asString(absPath, 'absPath', 1000))
   })
 
-  ipcMain.handle(CH.imgCopy, (_e, absPath: unknown) => {
-    const image = nativeImage.createFromPath(asString(absPath, 'absPath', 1000))
+  ipcMain.handle(CH.imgCopy, async (_e, absPath: unknown) => {
+    const source = asString(absPath, 'absPath', 1000)
+    // nativeImage solo decodifica PNG/JPEG (verificado contra la docs de
+    // Electron); el output vive en WEBP, asi que se reconvierte con sharp
+    // solo para este viaje al portapapeles.
+    const pngBuffer = await sharp(source).png().toBuffer()
+    const image = nativeImage.createFromBuffer(pngBuffer)
     if (image.isEmpty()) throw new Error('No se pudo leer la imagen')
     clipboard.writeImage(image)
   })
@@ -295,10 +304,11 @@ export function registerIpc(getWindow: () => BrowserWindow | null): void {
     const win = getWindow()
     if (!win) return null
 
+    const ext = extname(source).replace('.', '').toLowerCase() || 'webp'
     const result = await dialog.showSaveDialog(win, {
       title: 'Guardar imagen',
       defaultPath: basename(source),
-      filters: [{ name: 'Imagen PNG', extensions: ['png'] }]
+      filters: [{ name: `Imagen ${ext.toUpperCase()}`, extensions: [ext] }]
     })
     if (result.canceled || !result.filePath) return null
 
@@ -314,4 +324,20 @@ export function registerIpc(getWindow: () => BrowserWindow | null): void {
 
   // --- app
   ipcMain.handle(CH.appVersion, () => app.getVersion())
+
+  // --- ventana (sin marco nativo, la TopBar dibuja sus propios controles)
+  ipcMain.handle(CH.windowMinimize, () => getWindow()?.minimize())
+  ipcMain.handle(CH.windowToggleMaximize, () => {
+    const win = getWindow()
+    if (!win) return
+    if (win.isMaximized()) win.unmaximize()
+    else win.maximize()
+  })
+  ipcMain.handle(CH.windowClose, () => getWindow()?.close())
+  ipcMain.handle(CH.windowIsMaximized, () => getWindow()?.isMaximized() ?? false)
+
+  // --- traduccion
+  ipcMain.handle(CH.translateEsToEn, (_e, text: unknown) =>
+    translateEsToEn(asString(text, 'text', 4000))
+  )
 }

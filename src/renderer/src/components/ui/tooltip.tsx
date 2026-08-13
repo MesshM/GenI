@@ -49,13 +49,14 @@ export function InfoTip({ text, className }: { text: string; className?: string 
                 bottom: window.innerHeight - rect.top + 8,
                 zIndex: 95
               }}
-              // Colores fijos, no tokens de tema: ink-900 se invierte en oscuro
-              // (pasa a ser casi blanco), lo que dejaba fondo blanco + texto
-              // blanco. La burbuja del tooltip es siempre oscura, en los dos temas.
-              className="pointer-events-none w-max max-w-[210px] -translate-x-1/2 rounded-box bg-[#20232b] px-2.5 py-1.5 text-[11px] font-semibold normal-case leading-snug tracking-normal text-white shadow-deep"
+              // Colores fijos, no tokens de tema: ink-900 se invierte en
+              // oscuro (pasa a ser casi blanco), lo que antes dejaba fondo
+              // blanco + texto blanco. La burbuja es crema con texto negro
+              // fijo en los dos temas, no reacciona al tema de la app.
+              className="pointer-events-none w-max max-w-52.5 -translate-x-1/2 rounded-box bg-[#faf3e6] px-2.5 py-1.5 text-[11px] font-semibold normal-case leading-snug tracking-normal text-black shadow-deep"
             >
               {text}
-              <span className="absolute left-1/2 top-full -mt-px h-2 w-2 -translate-x-1/2 rotate-45 bg-[#20232b]" />
+              <span className="absolute left-1/2 top-full -mt-px h-2 w-2 -translate-x-1/2 rotate-45 bg-[#faf3e6]" />
             </motion.span>
           )}
         </AnimatePresence>,

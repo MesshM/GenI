@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { getDb } from './index'
+import { normalizeParams } from '../comfy/params'
 import type {
   Conversation,
   Generation,
@@ -169,7 +170,7 @@ function toMessage(r: MessageRow, generations: Generation[]): Message {
     role: r.role as Message['role'],
     prompt: r.prompt,
     negative: r.negative,
-    params: JSON.parse(r.params_json) as GenerationParams,
+    params: normalizeParams(JSON.parse(r.params_json) as GenerationParams),
     presetId: r.preset_id,
     status: r.status as MessageStatus,
     error: r.error,

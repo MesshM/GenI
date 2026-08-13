@@ -3,6 +3,7 @@ import { copyFile, mkdir, stat, unlink } from 'node:fs/promises'
 import { extname, join, resolve } from 'node:path'
 import { app } from 'electron'
 import { getDb } from '../db'
+import { normalizeParams } from '../comfy/params'
 import type { CreatePresetInput, ParamPreset } from '@shared/types'
 
 interface PresetRow {
@@ -22,7 +23,7 @@ function toPreset(r: PresetRow): ParamPreset {
     name: r.name,
     recipeId: r.recipe_id,
     recipeName: r.recipe_name,
-    params: JSON.parse(r.params_json),
+    params: normalizeParams(JSON.parse(r.params_json)),
     negative: r.negative,
     referenceImagePath: r.reference_image_path,
     createdAt: r.created_at

@@ -2,9 +2,12 @@ import { useState } from 'react'
 import { useStore, imageUrl, type View } from '../store/useStore'
 import { Icon } from './ui/icon'
 import { Button } from './ui/button'
+import { ImageWithSkeleton } from './ui/image'
 import { ModalRoot, ModalTrigger } from './ui/modal'
 import SettingsDialog from './SettingsDialog'
 import { cn } from '@/lib/utils'
+import isotipo from '@/assets/icons/isotipo.png'
+import logotipo from '@/assets/icons/logotipo.png'
 
 const NAV: { view: View; icon: string; label: string }[] = [
   { view: 'chat', icon: 'auto_awesome', label: 'Generar' },
@@ -44,13 +47,9 @@ export default function Sidebar(): React.JSX.Element {
 
   return (
     <aside className="flex shrink-0 flex-col px-3 py-4" style={{ width }}>
-      <div className="mb-5 flex h-12 items-center pl-[9px]">
-        <span className="grid h-[38px] w-[38px] shrink-0 place-items-center rounded-full bg-cta shadow-blue">
-          <Icon name="brush" filled className="text-[21px]" />
-        </span>
-        <span className="ml-2.5 bg-wordmark bg-clip-text text-[20px] font-extrabold tracking-tight text-transparent">
-          GenI
-        </span>
+      <div className="mb-5 flex h-12 items-center pl-2.25">
+        <img src={isotipo} alt="" className="h-9 w-9 shrink-0 object-contain" />
+        <img src={logotipo} alt="GenI" className="ml-2.5 h-6 w-auto object-contain" />
       </div>
 
       <nav className="flex flex-col gap-1.5">
@@ -127,10 +126,12 @@ export default function Sidebar(): React.JSX.Element {
               >
                 <div className="flex items-center gap-2">
                   {c.thumbnail ? (
-                    <img
+                    <ImageWithSkeleton
                       src={imageUrl(c.thumbnail)}
                       alt=""
-                      className="h-9 w-9 shrink-0 rounded-chip object-cover shadow-soft"
+                      wrapperClassName="h-9 w-9 shrink-0 overflow-hidden rounded-chip shadow-soft"
+                      skeletonClassName="rounded-chip"
+                      className="h-full w-full object-cover"
                     />
                   ) : (
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-chip bg-fog/25">
@@ -218,7 +219,7 @@ export default function Sidebar(): React.JSX.Element {
 
       {confirmDelete && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-ink-900/25 p-6 backdrop-blur-sm">
-          <div className="glass-strong w-full max-w-sm rounded-panel p-5 shadow-deep">
+          <div className="glass-strong w-full max-w-sm rounded-panel p-5 shadow-glass-lg">
             <h3 className="text-[15.8px] font-extrabold text-ink-900">Borrar conversacion</h3>
             <p className="mt-2 text-[13.7px] leading-snug text-ink-600">
               Se borra la conversacion y su historial. Las imagenes ya generadas siguen en la

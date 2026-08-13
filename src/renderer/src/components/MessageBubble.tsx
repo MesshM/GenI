@@ -1,5 +1,6 @@
 import { useStore, imageUrl } from '../store/useStore'
 import { Icon } from './ui/icon'
+import { ImageWithSkeleton } from './ui/image'
 import { cn } from '@/lib/utils'
 import type { GenerationProgress, Message } from '@shared/types'
 
@@ -24,6 +25,7 @@ export default function MessageBubble({ message, progress }: Props): React.JSX.E
   }
 
   const activeLoras = message.params.loras.filter((l) => l.enabled)
+  const usedTriggers = activeLoras.flatMap((l) => l.triggers.map((word) => ({ modelId: l.modelId, word })))
   const cols = message.params.batchSize > 1 ? 'grid-cols-2' : 'grid-cols-1'
 
   return (
@@ -45,6 +47,23 @@ export default function MessageBubble({ message, progress }: Props): React.JSX.E
           </Chip>
         ))}
       </div>
+
+      {/* Que trigger words se usaron de verdad en esta generacion — se
+          define al momento de generar, no antes, asi queda un registro
+          exacto de que se le mando al modelo en cada mensaje. */}
+      {usedTriggers.length > 0 && (
+        <div className="mt-2 flex flex-wrap items-center gap-1">
+          <Icon name="sell" className="text-[12.6px] text-ink-400" />
+          {usedTriggers.map((t) => (
+            <span
+              key={`${t.modelId}-${t.word}`}
+              className="rounded-full border border-line/50 bg-white/50 px-2 py-0.5 text-[10.5px] font-bold text-ink-500 dark:bg-white/5"
+            >
+              {t.word}
+            </span>
+          ))}
+        </div>
+      )}
 
       {running && (
         <div className="mt-4">
@@ -100,11 +119,12 @@ export default function MessageBubble({ message, progress }: Props): React.JSX.E
               key={g.id}
               className="group/img relative overflow-hidden rounded-box bg-white/50 shadow-soft dark:bg-white/5"
             >
-              <img
+              <ImageWithSkeleton
                 src={imageUrl(g.absPath)}
                 alt={message.prompt.slice(0, 80)}
-                loading="lazy"
-                className="w-full object-contain"
+                wrapperClassName="w-full"
+                wrapperStyle={{ aspectRatio: `${g.width} / ${g.height}` }}
+                className="h-full w-full object-contain"
               />
               <figcaption className="absolute inset-x-0 bottom-0 flex justify-end gap-1.5 bg-gradient-to-t from-ink-900/75 to-transparent p-2 opacity-0 transition-opacity group-hover/img:opacity-100">
                 <ImgBtn icon="content_copy" label="Copiar" onClick={() => void window.geni.images.copy(g.absPath)} />

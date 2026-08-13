@@ -131,7 +131,7 @@ export default function ModelsView(): React.JSX.Element {
             className="text-[42px] text-cobalt-500"
           />
           <p className="mt-1.5 text-[14.7px] font-bold text-ink-800">
-            {dragging ? 'Solta los archivos' : 'Arrastra tus .safetensors aca'}
+            {dragging ? 'Suelta los archivos' : 'Arrastra tus .safetensors aqui'}
           </p>
           <p className="mt-1 text-[12.6px] text-ink-500">
             Checkpoints, LoRAs, VAE, codificadores... se detectan solos.
@@ -326,7 +326,7 @@ export default function ModelsView(): React.JSX.Element {
 
       {target && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-ink-900/25 p-6 backdrop-blur-sm">
-          <div className="glass-strong w-full max-w-sm rounded-panel p-5 shadow-deep">
+          <div className="glass-strong w-full max-w-sm rounded-panel p-5 shadow-glass-lg">
             <h3 className="text-[15.8px] font-extrabold text-ink-900">Eliminar modelo</h3>
             <p className="mt-2 text-[13.7px] leading-snug text-ink-600">
               Se borra <span className="font-bold">{target.filename}</span> del disco. Esta accion

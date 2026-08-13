@@ -56,6 +56,16 @@ function persistWidths(sidebar: number, params: number): void {
   }
 }
 
+const SIDEBAR_VISIBLE_KEY = 'geni:sidebarVisible'
+
+function loadSidebarVisible(): boolean {
+  try {
+    return localStorage.getItem(SIDEBAR_VISIBLE_KEY) !== 'false'
+  } catch {
+    return true
+  }
+}
+
 interface State {
   ready: boolean
   view: View
@@ -80,8 +90,10 @@ interface State {
 
   sidebarWidth: number
   paramsWidth: number
+  sidebarVisible: boolean
   setSidebarWidth: (w: number) => void
   setParamsWidth: (w: number) => void
+  toggleSidebar: () => void
 
   setView: (v: View) => void
   bootstrap: () => Promise<void>
@@ -135,6 +147,7 @@ export const useStore = create<State>((set, get) => ({
 
   sidebarWidth: loadWidths().sidebar,
   paramsWidth: loadWidths().params,
+  sidebarVisible: loadSidebarVisible(),
 
   setSidebarWidth(w) {
     set({ sidebarWidth: w })
@@ -144,6 +157,16 @@ export const useStore = create<State>((set, get) => ({
   setParamsWidth(w) {
     set({ paramsWidth: w })
     persistWidths(get().sidebarWidth, w)
+  },
+
+  toggleSidebar() {
+    const next = !get().sidebarVisible
+    set({ sidebarVisible: next })
+    try {
+      localStorage.setItem(SIDEBAR_VISIBLE_KEY, String(next))
+    } catch {
+      // sin localStorage la app funciona igual, solo no recuerda la preferencia
+    }
   },
 
   setView: (view) => set({ view }),
@@ -360,7 +383,7 @@ export const useStore = create<State>((set, get) => ({
       label: model.filename.replace(/\.[^.]+$/, ''),
       strength: 0.8,
       enabled: true,
-      trigger: model.triggerWords[0]
+      triggers: model.triggerWords[0] ? [model.triggerWords[0]] : []
     }
     set({ params: { ...params, loras: [...params.loras, lora] } })
   },

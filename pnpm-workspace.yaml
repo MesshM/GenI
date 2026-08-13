@@ -1,7 +1,12 @@
 # Paquetes autorizados a ejecutar scripts de instalacion.
 # electron descarga su binario en postinstall; sin esto la app no arranca.
 # electron-winstaller no hace falta: empaquetamos con NSIS.
+# onnxruntime-node: motor de inferencia del traductor local, baja su binario
+# nativo asi. sharp/protobufjs: dependencias transitivas de transformers.js.
 allowBuilds:
   electron: true
   esbuild: true
   electron-winstaller: false
+  onnxruntime-node: true
+  protobufjs: true
+  sharp: true
