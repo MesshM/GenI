@@ -13,6 +13,11 @@ export const CH = {
 
   recipesList: 'recipes:list',
 
+  presetsList: 'presets:list',
+  presetsCreate: 'presets:create',
+  presetsRemove: 'presets:remove',
+  presetsPickReferenceImage: 'presets:pickReferenceImage',
+
   modelsList: 'models:list',
   modelsScan: 'models:scan',
   modelsImportPaths: 'models:importPaths',

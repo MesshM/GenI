@@ -5,6 +5,7 @@ import TopBar from './components/TopBar'
 import ParamsPanel from './components/ParamsPanel'
 import ChatPanel from './components/ChatPanel'
 import ModelsView from './components/ModelsView'
+import PresetsView from './components/PresetsView'
 import Onboarding from './components/Onboarding'
 import { Resizer } from './components/ui/resizer'
 
@@ -49,6 +50,8 @@ export default function App(): React.JSX.Element {
 
         {view === 'models' ? (
           <ModelsView />
+        ) : view === 'presets' ? (
+          <PresetsView />
         ) : (
           <div className="flex min-h-0 flex-1">
             <ParamsPanel />

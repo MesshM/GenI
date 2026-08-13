@@ -14,3 +14,13 @@ export function formatBytes(bytes: number): string {
   const value = bytes / 1024 ** i
   return `${value >= 100 || i === 0 ? Math.round(value) : value.toFixed(2)} ${units[i]}`
 }
+
+function gcd(a: number, b: number): number {
+  return b === 0 ? a : gcd(b, a % b)
+}
+
+/** "832x1216" -> "2:3". Usada para el indicador visual de resolucion. */
+export function aspectRatioLabel(width: number, height: number): string {
+  const g = gcd(width, height) || 1
+  return `${width / g}:${height / g}`
+}

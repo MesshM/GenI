@@ -4,17 +4,19 @@ import type {
   AppSettings,
   ComfyStatus,
   Conversation,
+  CreatePresetInput,
   DownloadJob,
   GenerationParams,
   GenerationProgress,
   LoraSetting,
   Message,
   ModelAsset,
+  ParamPreset,
   Recipe,
   UpdateInfo
 } from '@shared/types'
 
-export type View = 'chat' | 'models'
+export type View = 'chat' | 'models' | 'presets'
 
 /** Limites de los paneles redimensionables. */
 export const SIDEBAR_MIN = 210
@@ -64,6 +66,7 @@ interface State {
   recipes: Recipe[]
   models: ModelAsset[]
   downloads: DownloadJob[]
+  presets: ParamPreset[]
 
   conversations: Conversation[]
   activeId: string | null
@@ -90,6 +93,11 @@ interface State {
   renameConversation: (id: string, title: string) => Promise<void>
 
   chooseRecipe: (recipeId: string) => void
+  /** Carga un preset guardado: cambia de receta si hace falta y trae sus parametros. */
+  applyPreset: (presetId: string) => void
+  refreshPresets: () => Promise<void>
+  createPreset: (input: Omit<CreatePresetInput, 'params' | 'negative' | 'recipeId' | 'recipeName'>) => Promise<void>
+  removePreset: (id: string) => Promise<void>
   setPrompt: (v: string) => void
   setNegative: (v: string) => void
   patchParams: (patch: Partial<GenerationParams>) => void
@@ -113,6 +121,7 @@ export const useStore = create<State>((set, get) => ({
   recipes: [],
   models: [],
   downloads: [],
+  presets: [],
 
   conversations: [],
   activeId: null,
@@ -146,12 +155,13 @@ export const useStore = create<State>((set, get) => ({
     // Sin ruta de ComfyUI no hay carpetas que escanear todavia.
     if (settings.comfyPath) await window.geni.models.scan()
 
-    const [recipes, models, conversations, comfy, downloads] = await Promise.all([
+    const [recipes, models, conversations, comfy, downloads, presets] = await Promise.all([
       window.geni.recipes.list(),
       window.geni.models.list(),
       window.geni.conversations.list(),
       window.geni.comfy.status(),
-      window.geni.models.downloads()
+      window.geni.models.downloads(),
+      window.geni.presets.list()
     ])
 
     const first = recipes[0] ?? null
@@ -162,6 +172,7 @@ export const useStore = create<State>((set, get) => ({
       conversations,
       comfy,
       downloads,
+      presets,
       recipeId: first?.id ?? null,
       params: first ? structuredClone(first.defaults) : null,
       negative: first?.negativeDefault ?? '',
@@ -276,6 +287,44 @@ export const useStore = create<State>((set, get) => ({
       params: structuredClone(recipe.defaults),
       negative: recipe.negativeDefault
     })
+  },
+
+  applyPreset(presetId) {
+    const preset = get().presets.find((p) => p.id === presetId)
+    if (!preset) return
+    // Si el modelo que usaba ya no esta instalado, no hay a que cambiar:
+    // se deja la receta actual y solo se avisa via el filtrado del Select.
+    const recipeExists = get().recipes.some((r) => r.id === preset.recipeId)
+    set({
+      recipeId: recipeExists ? preset.recipeId : get().recipeId,
+      params: structuredClone(preset.params),
+      negative: preset.negative
+    })
+  },
+
+  async refreshPresets() {
+    const presets = await window.geni.presets.list()
+    set({ presets })
+  },
+
+  async createPreset(input) {
+    const { recipeId, recipes, params, negative } = get()
+    const recipe = recipes.find((r) => r.id === recipeId)
+    if (!recipeId || !params || !recipe) return
+
+    await window.geni.presets.create({
+      ...input,
+      recipeId,
+      recipeName: recipe.name,
+      params,
+      negative
+    })
+    await get().refreshPresets()
+  },
+
+  async removePreset(id) {
+    await window.geni.presets.remove(id)
+    set((state) => ({ presets: state.presets.filter((p) => p.id !== id) }))
   },
 
   setPrompt: (v) => set({ prompt: v }),

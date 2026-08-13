@@ -15,9 +15,10 @@ import {
   updateModel
 } from '../models/manager'
 import { downloader } from '../models/download'
+import { createPreset, deletePreset, isImageFile, listPresets } from '../presets/manager'
 import { detectComfy, getSettings, isComfyFolder, updateSettings } from '../settings'
 import { updater } from '../updater'
-import type { AppSettings, ImportResult, SubmitInput } from '@shared/types'
+import type { AppSettings, CreatePresetInput, ImportResult, SubmitInput } from '@shared/types'
 
 // ------------------------------------------------------- validacion basica
 // Todo lo que llega del renderer se trata como no confiable, aunque sea
@@ -86,6 +87,27 @@ function asSubmitInput(v: unknown): SubmitInput {
   }
 }
 
+function asGenerationParams(v: unknown): SubmitInput['params'] {
+  // Reutiliza el mismo parser que ya valida los parametros de generacion,
+  // envolviendolo en la forma que espera asSubmitInput.
+  return asSubmitInput({ conversationId: 'x', presetId: 'x', prompt: '', negative: '', params: v })
+    .params
+}
+
+function asCreatePresetInput(v: unknown): CreatePresetInput {
+  if (typeof v !== 'object' || v === null) throw new Error('Preset invalido')
+  const o = v as Record<string, unknown>
+  return {
+    name: asString(o.name, 'name', 200).trim() || 'Preset sin nombre',
+    recipeId: asId(o.recipeId, 'recipeId'),
+    recipeName: asString(o.recipeName ?? '', 'recipeName', 200),
+    negative: asString(o.negative ?? '', 'negative'),
+    params: asGenerationParams(o.params),
+    referenceImageSourcePath:
+      typeof o.referenceImageSourcePath === 'string' ? o.referenceImageSourcePath : undefined
+  }
+}
+
 // ------------------------------------------------------------- registro
 
 export function registerIpc(getWindow: () => BrowserWindow | null): void {
@@ -137,6 +159,31 @@ export function registerIpc(getWindow: () => BrowserWindow | null): void {
 
   // --- recetas (derivadas del catalogo de modelos)
   ipcMain.handle(CH.recipesList, () => listRecipes())
+
+  // --- presets (configuraciones guardadas, con imagen de referencia)
+  ipcMain.handle(CH.presetsList, () => listPresets())
+
+  ipcMain.handle(CH.presetsCreate, async (_e, input: unknown) =>
+    createPreset(asCreatePresetInput(input))
+  )
+
+  ipcMain.handle(CH.presetsRemove, (_e, id: unknown) => deletePreset(asId(id, 'id')))
+
+  ipcMain.handle(CH.presetsPickReferenceImage, async () => {
+    const win = getWindow()
+    if (!win) return null
+
+    const picked = await dialog.showOpenDialog(win, {
+      title: 'Elegi una imagen de referencia',
+      properties: ['openFile'],
+      filters: [{ name: 'Imagenes', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] }]
+    })
+    if (picked.canceled || !picked.filePaths[0]) return null
+
+    const path = picked.filePaths[0]
+    if (!(await isImageFile(path))) throw new Error('Ese archivo no parece una imagen valida')
+    return path
+  })
 
   // --- modelos
   ipcMain.handle(CH.modelsList, () => listModels())

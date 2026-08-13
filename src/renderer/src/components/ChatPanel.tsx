@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useStore } from '../store/useStore'
 import MessageBubble from './MessageBubble'
+import TriggerWordsBar from './TriggerWordsBar'
 import { Icon } from './ui/icon'
 import { Button } from './ui/button'
+import { useAutoGrow } from '@/lib/useAutoGrow'
 
 export default function ChatPanel(): React.JSX.Element {
   const messages = useStore((s) => s.messages)
@@ -14,6 +16,7 @@ export default function ChatPanel(): React.JSX.Element {
   const recipes = useStore((s) => s.recipes)
 
   const endRef = useRef<HTMLDivElement>(null)
+  const promptRef = useAutoGrow(prompt)
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -63,13 +66,14 @@ export default function ChatPanel(): React.JSX.Element {
 
       <div className="mx-auto mt-3 w-full max-w-2xl px-4">
         <div className="glass-strong rounded-panel p-2.5 shadow-lift">
-          {/* scroll: barra fina propia si el texto no entra en las filas
-              visibles. resize-y: tirador en la esquina para agrandar. */}
+          {/* Autogrow: crece con el texto hasta 320px, despues scrollea con
+              barra fina propia. Sin tirador manual. */}
           <textarea
+            ref={promptRef}
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             onKeyDown={onKeyDown}
-            rows={3}
+            rows={1}
             placeholder={
               comfy.state !== 'ready'
                 ? 'Esperando a que ComfyUI este listo...'
@@ -78,8 +82,11 @@ export default function ChatPanel(): React.JSX.Element {
                   : 'Describi la imagen... (Enter para enviar, Shift+Enter para salto de linea)'
             }
             disabled={!ready}
-            className="scroll min-h-[76px] max-h-[320px] w-full resize-y bg-transparent px-2 py-1.5 text-[14.7px] leading-relaxed text-ink-800 outline-none placeholder:text-ink-400 disabled:opacity-50"
+            className="scroll min-h-[52px] max-h-[320px] w-full resize-none overflow-y-auto bg-transparent px-2 py-1.5 text-[14.7px] leading-relaxed text-ink-800 outline-none placeholder:text-ink-400 disabled:opacity-50"
           />
+          <div className="px-1 pb-1 pt-1">
+            <TriggerWordsBar />
+          </div>
           <div className="flex items-center justify-between gap-2 px-1">
             <span className="text-[11.6px] font-semibold text-ink-400">
               {prompt.trim().split(/\s+/).filter(Boolean).length} palabras

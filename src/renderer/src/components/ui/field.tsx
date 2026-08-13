@@ -1,6 +1,7 @@
 import { Icon } from './icon'
 import { InfoTip } from './tooltip'
 import { cn } from '@/lib/utils'
+import { useAutoGrow } from '@/lib/useAutoGrow'
 
 // Controles de formulario con el acabado de docline: bordes suaves,
 // foco con halo azul y sombra interior sutil.
@@ -76,16 +77,24 @@ export function TextArea({
   tip,
   wrapClassName,
   className,
+  value,
   ...rest
 }: TextAreaProps): React.JSX.Element {
+  // Autogrow en vez de tirador manual: crece con lo que se escribe.
+  const autoRef = useAutoGrow(typeof value === 'string' ? value : '')
+
   return (
     <div className={cn('mb-4', wrapClassName)}>
       {label && <Label tip={tip}>{label}</Label>}
-      {/* resize-y: tirador en la esquina inferior derecha, solo estira alto
-          para no romper el ancho del panel. scroll: barra fina propia en vez
-          de la del navegador si el contenido no entra. */}
       <textarea
-        className={cn(CONTROL, 'scroll min-h-[76px] resize-y leading-relaxed', className)}
+        ref={autoRef}
+        value={value}
+        rows={1}
+        className={cn(
+          CONTROL,
+          'scroll max-h-[280px] min-h-[76px] resize-none overflow-y-auto leading-relaxed',
+          className
+        )}
         {...rest}
       />
       {hint && <p className="mt-1 text-[11.6px] leading-snug text-ink-400">{hint}</p>}
@@ -142,10 +151,14 @@ export function Slider({
             max={max}
             step={step}
             onChange={(e) => onChange(clamp(Number(e.target.value)))}
-            className="w-full rounded-[8px] border border-line/70 bg-white/80 py-0.5 pl-1.5 pr-4 text-right text-[12.6px] font-bold text-ink-800 outline-none focus:border-halo/50 focus:ring-2 focus:ring-halo/14 dark:bg-white/6"
+            // pr-[24px] deja hueco fijo para la columna de flechas: antes el
+            // valor quedaba pegado porque el padding no alcanzaba a cubrirla.
+            className="w-full rounded-[8px] border border-line/70 bg-white/80 py-[5px] pl-2 pr-[24px] text-right text-[12.6px] font-bold text-ink-800 outline-none focus:border-halo/50 focus:ring-2 focus:ring-halo/14 dark:bg-white/6"
           />
-          {/* Flechas propias: las del navegador no se pueden estilar. */}
-          <div className="absolute inset-y-[3px] right-[3px] flex w-[14px] flex-col overflow-hidden rounded-[5px]">
+          {/* Flechas propias: las del navegador no se pueden estilar. Ocupan
+              todo el alto (antes quedaban de 3px de margen = ~6px total, muy
+              poco para mostrar las dos, la de bajar se recortaba). */}
+          <div className="absolute inset-y-0 right-0 flex w-[21px] flex-col overflow-hidden rounded-r-[7px] border-l border-line/50">
             <button
               type="button"
               tabIndex={-1}
@@ -153,7 +166,7 @@ export function Slider({
               onClick={() => bump(step)}
               className="flex flex-1 items-center justify-center bg-black/[0.03] text-ink-400 transition-colors hover:bg-tint/20 hover:text-cobalt-600 dark:bg-white/6 dark:hover:bg-white/16"
             >
-              <Icon name="arrow_drop_up" className="text-[13px]" />
+              <Icon name="arrow_drop_up" className="text-[14px]" />
             </button>
             <button
               type="button"
@@ -162,7 +175,7 @@ export function Slider({
               onClick={() => bump(-step)}
               className="flex flex-1 items-center justify-center border-t border-line/40 bg-black/[0.03] text-ink-400 transition-colors hover:bg-tint/20 hover:text-cobalt-600 dark:bg-white/6 dark:hover:bg-white/16"
             >
-              <Icon name="arrow_drop_down" className="text-[13px]" />
+              <Icon name="arrow_drop_down" className="text-[14px]" />
             </button>
           </div>
         </div>

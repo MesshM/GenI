@@ -119,6 +119,34 @@ export interface GenerationParams {
   loras: LoraSetting[]
 }
 
+/**
+ * Una configuracion completa guardada con nombre e imagen de referencia:
+ * el modelo, los parametros y el negativo tal como estaban cuando se
+ * guardo. Se elige desde el select de Generar, debajo de Modelo.
+ */
+export interface ParamPreset {
+  id: string
+  name: string
+  recipeId: string
+  /** Copia textual del nombre de la receta al momento de guardar: si el
+   *  modelo se borra despues, la fila sigue siendo legible. */
+  recipeName: string
+  params: GenerationParams
+  negative: string
+  referenceImagePath: string | null
+  createdAt: number
+}
+
+export interface CreatePresetInput {
+  name: string
+  recipeId: string
+  recipeName: string
+  params: GenerationParams
+  negative: string
+  /** Ruta del archivo elegido por el usuario; se copia a la carpeta de la app. */
+  referenceImageSourcePath?: string
+}
+
 // ------------------------------------------------------------ mensajes
 
 export type MessageStatus = 'pending' | 'running' | 'done' | 'error' | 'cancelled'
@@ -221,6 +249,12 @@ export interface GenIApi {
   }
   recipes: {
     list(): Promise<Recipe[]>
+  }
+  presets: {
+    list(): Promise<ParamPreset[]>
+    create(input: CreatePresetInput): Promise<ParamPreset>
+    remove(id: string): Promise<void>
+    pickReferenceImage(): Promise<string | null>
   }
   models: {
     list(): Promise<ModelAsset[]>

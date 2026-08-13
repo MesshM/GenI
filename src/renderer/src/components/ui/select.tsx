@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { Icon } from './icon'
 import { InfoTip } from './tooltip'
@@ -104,7 +105,10 @@ export function Select<T extends string>({
         className={cn(
           'flex w-full items-center gap-2 rounded-chip border px-2.5 py-2 text-left text-[13.7px] font-bold transition-[background,border-color,box-shadow] duration-200 disabled:opacity-50',
           open
-            ? 'border-halo/50 bg-white text-ink-900 ring-4 ring-halo/14 dark:bg-white/10'
+            ? // cobalt-500 ya esta redefinido a crema en el tema oscuro (es el
+              // mismo token que usa "lo activo" en toda la app); usarlo en vez
+              // de halo asegura que el foco sea crema y no un azul suelto.
+              'border-cobalt-500/50 bg-white text-ink-900 ring-4 ring-cobalt-500/14 dark:bg-white/10 dark:border-cobalt-500/40 dark:ring-cobalt-500/16'
             : 'border-line/70 bg-white/70 text-ink-800 hover:border-line hover:bg-white hover:shadow-soft dark:bg-white/6 dark:hover:bg-white/10'
         )}
       >
@@ -125,67 +129,70 @@ export function Select<T extends string>({
 
       {hint && <p className="mt-1 text-[11.6px] leading-snug text-ink-400">{hint}</p>}
 
-      <AnimatePresence>
-        {open && rect && (
-          <motion.div
-            ref={listRef}
-            role="listbox"
-            initial={{ opacity: 0, y: openUp ? 6 : -6, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: openUp ? 6 : -6, scale: 0.98 }}
-            transition={{ duration: 0.16, ease: [0.2, 0.8, 0.2, 1] }}
-            style={{
-              position: 'fixed',
-              left: rect.left,
-              width: rect.width,
-              top: openUp ? undefined : rect.bottom + 6,
-              bottom: openUp ? window.innerHeight - rect.top + 6 : undefined,
-              maxHeight: listMaxHeight,
-              zIndex: 80
-            }}
-            className="glass-strong scroll overflow-y-auto rounded-box p-1.5 shadow-deep"
-          >
-            {options.map((o) => {
-              const active = o.value === value
-              return (
-                <button
-                  key={o.value}
-                  type="button"
-                  role="option"
-                  aria-selected={active}
-                  onClick={() => {
-                    onChange(o.value)
-                    setOpen(false)
-                  }}
-                  className={cn(
-                    'flex w-full items-center gap-2.5 rounded-chip px-2.5 py-2 text-left text-[13.7px] font-bold transition-colors duration-150',
-                    active
-                      ? 'bg-white/85 text-cobalt-700 shadow-soft dark:bg-white/12'
-                      : 'text-ink-600 hover:bg-white/60 hover:text-ink-800 dark:hover:bg-white/8'
-                  )}
-                >
-                  {o.icon && (
-                    <Icon
-                      name={o.icon}
-                      filled={active}
-                      className={cn(
-                        'shrink-0 text-[18.9px]',
-                        active ? 'text-cobalt-600' : 'text-ink-400'
-                      )}
-                    />
-                  )}
-                  <span className="min-w-0 flex-1 truncate">{o.label}</span>
-                  {o.hint && (
-                    <span className="shrink-0 text-[10.5px] font-semibold text-ink-400">
-                      {o.hint}
-                    </span>
-                  )}
-                </button>
-              )
-            })}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {createPortal(
+        <AnimatePresence>
+          {open && rect && (
+            <motion.div
+              ref={listRef}
+              role="listbox"
+              initial={{ opacity: 0, y: openUp ? 6 : -6, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: openUp ? 6 : -6, scale: 0.98 }}
+              transition={{ duration: 0.16, ease: [0.2, 0.8, 0.2, 1] }}
+              style={{
+                position: 'fixed',
+                left: rect.left,
+                width: rect.width,
+                top: openUp ? undefined : rect.bottom + 6,
+                bottom: openUp ? window.innerHeight - rect.top + 6 : undefined,
+                maxHeight: listMaxHeight,
+                zIndex: 95
+              }}
+              className="glass-strong scroll overflow-y-auto rounded-box p-1.5 shadow-deep"
+            >
+              {options.map((o) => {
+                const active = o.value === value
+                return (
+                  <button
+                    key={o.value}
+                    type="button"
+                    role="option"
+                    aria-selected={active}
+                    onClick={() => {
+                      onChange(o.value)
+                      setOpen(false)
+                    }}
+                    className={cn(
+                      'flex w-full items-center gap-2.5 rounded-chip px-2.5 py-2 text-left text-[13.7px] font-bold transition-colors duration-150',
+                      active
+                        ? 'bg-white/85 text-cobalt-700 shadow-soft dark:bg-white/12'
+                        : 'text-ink-600 hover:bg-white/60 hover:text-ink-800 dark:hover:bg-white/8'
+                    )}
+                  >
+                    {o.icon && (
+                      <Icon
+                        name={o.icon}
+                        filled={active}
+                        className={cn(
+                          'shrink-0 text-[18.9px]',
+                          active ? 'text-cobalt-600' : 'text-ink-400'
+                        )}
+                      />
+                    )}
+                    <span className="min-w-0 flex-1 truncate">{o.label}</span>
+                    {o.hint && (
+                      <span className="shrink-0 text-[10.5px] font-semibold text-ink-400">
+                        {o.hint}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   )
 }

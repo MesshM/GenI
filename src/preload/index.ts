@@ -4,12 +4,14 @@ import type {
   AppSettings,
   ComfyStatus,
   Conversation,
+  CreatePresetInput,
   DownloadJob,
   GenIApi,
   GenerationProgress,
   ImportResult,
   Message,
   ModelAsset,
+  ParamPreset,
   Recipe,
   SubmitInput,
   UpdateInfo
@@ -44,6 +46,14 @@ const api: GenIApi = {
   },
   recipes: {
     list: () => ipcRenderer.invoke(CH.recipesList) as Promise<Recipe[]>
+  },
+  presets: {
+    list: () => ipcRenderer.invoke(CH.presetsList) as Promise<ParamPreset[]>,
+    create: (input: CreatePresetInput) =>
+      ipcRenderer.invoke(CH.presetsCreate, input) as Promise<ParamPreset>,
+    remove: (id) => ipcRenderer.invoke(CH.presetsRemove, id) as Promise<void>,
+    pickReferenceImage: () =>
+      ipcRenderer.invoke(CH.presetsPickReferenceImage) as Promise<string | null>
   },
   models: {
     list: () => ipcRenderer.invoke(CH.modelsList) as Promise<ModelAsset[]>,

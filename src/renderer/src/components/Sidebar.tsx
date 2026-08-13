@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 
 const NAV: { view: View; icon: string; label: string }[] = [
   { view: 'chat', icon: 'auto_awesome', label: 'Generar' },
+  { view: 'presets', icon: 'bookmark', label: 'Presets' },
   { view: 'models', icon: 'inventory_2', label: 'Modelos' }
 ]
 
@@ -23,6 +24,7 @@ export default function Sidebar(): React.JSX.Element {
   const conversations = useStore((s) => s.conversations)
   const activeId = useStore((s) => s.activeId)
   const recipes = useStore((s) => s.recipes)
+  const presets = useStore((s) => s.presets)
   const select = useStore((s) => s.selectConversation)
   const create = useStore((s) => s.newConversation)
   const remove = useStore((s) => s.removeConversation)
@@ -72,6 +74,11 @@ export default function Sidebar(): React.JSX.Element {
               {item.view === 'models' && models.length > 0 && (
                 <span className="ml-auto rounded-full bg-tint/16 px-2 py-0.5 text-[11.6px] font-extrabold text-cobalt-600">
                   {models.length}
+                </span>
+              )}
+              {item.view === 'presets' && presets.length > 0 && (
+                <span className="ml-auto rounded-full bg-tint/16 px-2 py-0.5 text-[11.6px] font-extrabold text-cobalt-600">
+                  {presets.length}
                 </span>
               )}
             </button>

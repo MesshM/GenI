@@ -106,7 +106,7 @@ export default function MessageBubble({ message, progress }: Props): React.JSX.E
                 loading="lazy"
                 className="w-full object-contain"
               />
-              <figcaption className="absolute inset-x-0 bottom-0 flex gap-1 bg-gradient-to-t from-ink-900/75 to-transparent p-2 opacity-0 transition-opacity group-hover/img:opacity-100">
+              <figcaption className="absolute inset-x-0 bottom-0 flex justify-end gap-1.5 bg-gradient-to-t from-ink-900/75 to-transparent p-2 opacity-0 transition-opacity group-hover/img:opacity-100">
                 <ImgBtn icon="content_copy" label="Copiar" onClick={() => void window.geni.images.copy(g.absPath)} />
                 <ImgBtn icon="download" label="Guardar" onClick={() => void window.geni.images.saveAs(g.absPath)} />
                 <ImgBtn icon="folder_open" label="Carpeta" onClick={() => void window.geni.images.reveal(g.absPath)} />
@@ -172,13 +172,13 @@ function ImgBtn({
     <button
       onClick={onClick}
       title={label}
+      aria-label={label}
       // Negro fijo (no un token que se invierte en oscuro): este boton flota
       // sobre una imagen generada de colores arbitrarios, no sobre el chrome
       // de la app, asi que necesita su propio contraste siempre igual.
-      className="inline-flex items-center gap-1 rounded-full bg-white/85 px-2.5 py-1 text-[11.6px] font-bold text-black backdrop-blur transition-colors hover:bg-white"
+      className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/85 text-black backdrop-blur transition-colors hover:bg-white"
     >
-      <Icon name={icon} className="text-[14.7px]" />
-      {label}
+      <Icon name={icon} className="text-[15.8px]" />
     </button>
   )
 }

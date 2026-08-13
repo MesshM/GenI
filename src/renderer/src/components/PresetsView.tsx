@@ -1,0 +1,214 @@
+import { useState } from 'react'
+import { useStore, imageUrl } from '../store/useStore'
+import { Icon } from './ui/icon'
+import { Button } from './ui/button'
+import { Modal, ModalRoot, ModalTrigger } from './ui/modal'
+import { TextField } from './ui/field'
+import { cn } from '@/lib/utils'
+
+export default function PresetsView(): React.JSX.Element {
+  const presets = useStore((s) => s.presets)
+  const recipes = useStore((s) => s.recipes)
+  const recipeId = useStore((s) => s.recipeId)
+  const createPreset = useStore((s) => s.createPreset)
+  const removePreset = useStore((s) => s.removePreset)
+
+  const [open, setOpen] = useState(false)
+  const [name, setName] = useState('')
+  const [imagePath, setImagePath] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [confirmId, setConfirmId] = useState<string | null>(null)
+
+  const currentRecipe = recipes.find((r) => r.id === recipeId)
+
+  async function pickImage(): Promise<void> {
+    const path = await window.geni.presets.pickReferenceImage()
+    if (path) setImagePath(path)
+  }
+
+  async function save(): Promise<void> {
+    if (!name.trim() || !currentRecipe) return
+    setSaving(true)
+    setError(null)
+    try {
+      await createPreset({ name: name.trim(), referenceImageSourcePath: imagePath ?? undefined })
+      setName('')
+      setImagePath(null)
+      setOpen(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function remove(id: string): Promise<void> {
+    await removePreset(id)
+    setConfirmId(null)
+  }
+
+  return (
+    <main className="scroll min-w-0 flex-1 px-6 pb-6">
+      <div className="mx-auto max-w-4xl">
+        <div className="mb-5 flex items-center justify-between">
+          <div>
+            <h1 className="text-[22px] font-extrabold tracking-tight text-ink-900">Presets</h1>
+            <p className="mt-1 text-[13px] text-ink-500">
+              Configuraciones guardadas con una imagen de referencia, para volver a cargarlas
+              desde el select de Generar.
+            </p>
+          </div>
+
+          <ModalRoot isOpen={open} onOpenChange={setOpen}>
+            <ModalTrigger>
+              <Button icon="add" disabled={!currentRecipe}>
+                Nuevo preset
+              </Button>
+            </ModalTrigger>
+
+            <Modal
+              title="Nuevo preset"
+              footer={
+                <>
+                  <Button size="sm" variant="outline" onClick={() => setOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button size="sm" loading={saving} disabled={!name.trim()} onClick={() => void save()}>
+                    Guardar
+                  </Button>
+                </>
+              }
+            >
+              <p className="mb-4 rounded-box border border-line/50 bg-white/50 px-3 py-2 text-[12px] leading-snug text-ink-500 dark:bg-white/5">
+                Se guarda la configuracion actual de la vista Generar (modelo{' '}
+                <strong className="text-ink-700">{currentRecipe?.name ?? '—'}</strong>, LoRAs,
+                muestreo y prompt negativo) junto con el nombre y la imagen que elijas aca.
+              </p>
+
+              <TextField
+                label="Nombre"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Ej: Retrato realista, alto detalle"
+                autoFocus
+              />
+
+              <label className="mb-1.5 block text-[11.6px] font-bold uppercase tracking-wider text-ink-500">
+                Imagen de referencia
+              </label>
+              <button
+                type="button"
+                onClick={() => void pickImage()}
+                className={cn(
+                  'mb-1 flex h-40 w-full items-center justify-center overflow-hidden rounded-box border-2 border-dashed transition-colors',
+                  imagePath
+                    ? 'border-transparent'
+                    : 'border-line/70 bg-white/40 hover:border-cobalt-500/50 dark:bg-white/4'
+                )}
+              >
+                {imagePath ? (
+                  <img
+                    src={imageUrl(imagePath)}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="flex flex-col items-center gap-1 text-ink-400">
+                    <Icon name="add_photo_alternate" className="text-[28px]" />
+                    <span className="text-[12px] font-semibold">
+                      Click para elegir una imagen
+                    </span>
+                  </span>
+                )}
+              </button>
+              {imagePath && (
+                <button
+                  onClick={() => setImagePath(null)}
+                  className="text-[11px] font-semibold text-ink-400 underline hover:text-rose"
+                >
+                  Quitar imagen
+                </button>
+              )}
+
+              {error && (
+                <p className="mt-3 flex items-start gap-1.5 text-[12px] font-semibold text-rose-text">
+                  <Icon name="error" filled className="mt-px text-[15px]" />
+                  {error}
+                </p>
+              )}
+            </Modal>
+          </ModalRoot>
+        </div>
+
+        {presets.length === 0 ? (
+          <p className="rounded-panel border border-dashed border-line/70 px-4 py-10 text-center text-[13px] text-ink-400">
+            Todavia no hay presets. Ajusta los parametros en Generar y guardalos aca con "Nuevo
+            preset".
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {presets.map((p) => {
+              const available = recipes.some((r) => r.id === p.recipeId)
+              return (
+                <div
+                  key={p.id}
+                  className={cn(
+                    'group relative overflow-hidden rounded-panel border border-white/70 bg-white/55 shadow-soft backdrop-blur dark:border-white/10 dark:bg-white/6',
+                    !available && 'opacity-60'
+                  )}
+                >
+                  <div className="flex h-36 items-center justify-center bg-fog/15">
+                    {p.referenceImagePath ? (
+                      <img
+                        src={imageUrl(p.referenceImagePath)}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <Icon name="image" className="text-[32px] text-ink-300" />
+                    )}
+                  </div>
+                  <div className="p-2.5">
+                    <p className="truncate text-[12.6px] font-bold text-ink-800">{p.name}</p>
+                    <p className="truncate text-[10.5px] text-ink-400">
+                      {p.recipeName}
+                      {!available && ' · modelo no disponible'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setConfirmId(p.id)}
+                    title="Eliminar"
+                    className="absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-black/40 text-white opacity-0 backdrop-blur transition-opacity hover:bg-black/60 group-hover:opacity-100"
+                  >
+                    <Icon name="delete" className="text-[16px]" />
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {confirmId && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-ink-900/25 p-6 backdrop-blur-sm">
+          <div className="glass-strong w-full max-w-sm rounded-panel p-5 shadow-deep">
+            <h3 className="text-[15px] font-extrabold text-ink-900">Eliminar preset</h3>
+            <p className="mt-2 text-[13px] leading-snug text-ink-600">
+              Se borra la configuracion guardada y su imagen de referencia. No afecta a las
+              conversaciones que ya la usaron.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <Button size="sm" variant="outline" onClick={() => setConfirmId(null)}>
+                Cancelar
+              </Button>
+              <Button size="sm" variant="danger" onClick={() => void remove(confirmId)}>
+                Eliminar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </main>
+  )
+}

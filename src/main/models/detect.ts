@@ -194,7 +194,9 @@ function extractTriggerWords(meta: Record<string, string>): string[] {
           totals.set(tag, (totals.get(tag) ?? 0) + count)
         }
       }
-      const top = [...totals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3)
+      // Antes se tomaban solo las 3 mas frecuentes; Civitai y la comunidad
+      // muestran bastantes mas por LoRA, asi que se amplia la cosecha.
+      const top = [...totals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12)
       for (const [tag] of top) {
         const clean = tag.trim()
         if (clean && clean.length < 40) words.add(clean)
@@ -204,7 +206,7 @@ function extractTriggerWords(meta: Record<string, string>): string[] {
     }
   }
 
-  return [...words].slice(0, 6)
+  return [...words].slice(0, 20)
 }
 
 /** Carpeta de ComfyUI que corresponde a cada tipo. */

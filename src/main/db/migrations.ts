@@ -84,5 +84,28 @@ export const MIGRATIONS: Migration[] = [
         CREATE INDEX idx_models_kind ON models(kind, filename);
       `)
     }
+  },
+  {
+    version: 3,
+    up(db) {
+      // Presets: una configuracion completa de parametros con nombre e imagen
+      // de referencia, para volver a cargarla desde el select de Generar.
+      // recipe_name queda como copia textual: si el modelo que usaba se borra,
+      // la fila sigue siendo legible aunque ya no se pueda seleccionar.
+      db.exec(`
+        CREATE TABLE presets (
+          id                    TEXT PRIMARY KEY,
+          name                  TEXT NOT NULL,
+          recipe_id             TEXT NOT NULL,
+          recipe_name           TEXT NOT NULL,
+          params_json           TEXT NOT NULL,
+          negative              TEXT NOT NULL DEFAULT '',
+          reference_image_path  TEXT,
+          created_at            INTEGER NOT NULL
+        );
+
+        CREATE INDEX idx_presets_recipe ON presets(recipe_id);
+      `)
+    }
   }
 ]

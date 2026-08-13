@@ -4,7 +4,35 @@ import { Icon } from './ui/icon'
 import { Section, Slider, Switch, TextArea } from './ui/field'
 import { Select } from './ui/select'
 import { Resizer } from './ui/resizer'
-import { cn } from '@/lib/utils'
+import { aspectRatioLabel, cn } from '@/lib/utils'
+
+/** Rectangulo a escala que muestra la proporcion de la resolucion. */
+function RatioShape({
+  width,
+  height,
+  active
+}: {
+  width: number
+  height: number
+  active: boolean
+}): React.JSX.Element {
+  const MAX_SIDE = 24
+  const scale = width >= height ? MAX_SIDE / width : MAX_SIDE / height
+  const boxW = Math.max(6, Math.round(width * scale))
+  const boxH = Math.max(6, Math.round(height * scale))
+
+  return (
+    <span className="flex h-[26px] items-center justify-center">
+      <span
+        className={cn(
+          'rounded-[3px] border-2',
+          active ? 'border-cobalt-600' : 'border-ink-300'
+        )}
+        style={{ width: boxW, height: boxH }}
+      />
+    </span>
+  )
+}
 
 const SAMPLERS = [
   'euler',
@@ -27,7 +55,9 @@ export default function ParamsPanel(): React.JSX.Element {
   const params = useStore((s) => s.params)
   const negative = useStore((s) => s.negative)
   const models = useStore((s) => s.models)
+  const presets = useStore((s) => s.presets)
   const chooseRecipe = useStore((s) => s.chooseRecipe)
+  const applyPreset = useStore((s) => s.applyPreset)
   const patchParams = useStore((s) => s.patchParams)
   const setNegative = useStore((s) => s.setNegative)
   const addLora = useStore((s) => s.addLora)
@@ -39,7 +69,12 @@ export default function ParamsPanel(): React.JSX.Element {
   const setWidth = useStore((s) => s.setParamsWidth)
 
   const [picking, setPicking] = useState(false)
+  const [presetChoice, setPresetChoice] = useState('')
   const recipe = recipes.find((r) => r.id === recipeId)
+
+  // Solo se ofrecen presets cuyo modelo siga instalado: uno huerfano no se
+  // puede cargar (no hay receta a la que aplicarle los parametros).
+  const availablePresets = presets.filter((p) => recipes.some((r) => r.id === p.recipeId))
 
   /** Solo se ofrecen LoRAs compatibles con la arquitectura de la receta. */
   const availableLoras = useMemo(() => {
@@ -92,6 +127,27 @@ export default function ParamsPanel(): React.JSX.Element {
           />
           <p className="-mt-2 text-[11.6px] leading-snug text-ink-500">{recipe.description}</p>
         </Section>
+
+        {/* Preset guardado, justo debajo de Modelo */}
+        {availablePresets.length > 0 && (
+          <Section
+            title="Preset"
+            tip="Carga una configuracion guardada: modelo, LoRAs, muestreo y prompt negativo de una."
+          >
+            <Select
+              value={presetChoice}
+              placeholder="Sin preset"
+              options={[
+                { value: '', label: 'Sin preset (parametros actuales)' },
+                ...availablePresets.map((p) => ({ value: p.id, label: p.name }))
+              ]}
+              onChange={(id) => {
+                setPresetChoice(id)
+                if (id) applyPreset(id)
+              }}
+            />
+          </Section>
+        )}
 
         {/* 2. LoRAs, justo debajo del modelo */}
         <Section
@@ -259,22 +315,31 @@ export default function ParamsPanel(): React.JSX.Element {
             title="Resolucion"
             tip="Tamano final de la imagen. Resoluciones muy grandes tardan mas y usan mas memoria de video."
           >
-            <div className="mb-3 grid grid-cols-2 gap-1.5">
+            <div className="mb-3 grid grid-cols-3 gap-1.5">
               {recipe.resolutions.map((r) => {
                 const active = params.width === r.width && params.height === r.height
                 return (
                   <button
                     key={r.label}
+                    title={r.label}
                     onClick={() => patchParams({ width: r.width, height: r.height })}
                     className={cn(
-                      'rounded-chip border px-2 py-1.5 text-left text-[11.6px] font-bold transition-colors',
+                      'flex flex-col items-center gap-0.5 rounded-chip border px-1.5 py-2 transition-colors',
                       active
-                        ? 'border-cobalt-500/60 bg-tint/16 text-cobalt-700'
-                        : 'border-line/60 bg-white/50 text-ink-600 hover:bg-white dark:bg-white/5 dark:hover:bg-white/10'
+                        ? 'border-cobalt-500/60 bg-tint/16'
+                        : 'border-line/60 bg-white/50 hover:bg-white dark:bg-white/5 dark:hover:bg-white/10'
                     )}
                   >
-                    <span className="block truncate">{r.label}</span>
-                    <span className="text-[10.5px] font-semibold text-ink-400">
+                    <RatioShape width={r.width} height={r.height} active={active} />
+                    <span
+                      className={cn(
+                        'text-[11.6px] font-extrabold',
+                        active ? 'text-cobalt-700' : 'text-ink-600'
+                      )}
+                    >
+                      {aspectRatioLabel(r.width, r.height)}
+                    </span>
+                    <span className="text-[9.8px] font-semibold text-ink-400">
                       {r.width}×{r.height}
                     </span>
                   </button>

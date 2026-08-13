@@ -7,6 +7,7 @@ import { registerIpc } from './ipc'
 import { comfyProcess } from './comfy/process'
 import { comfyClient } from './comfy/client'
 import { getSettings } from './settings'
+import { presetsImagesRoot } from './presets/manager'
 import { updater } from './updater'
 
 const IMAGE_SCHEME = 'geni-file'
@@ -66,11 +67,12 @@ function createWindow(): void {
 }
 
 /**
- * Sirve las imagenes generadas al renderer.
+ * Sirve imagenes al renderer: las generadas por ComfyUI y las de referencia
+ * de los presets, que viven en carpetas distintas.
  *
- * Solo entrega archivos que esten dentro de la carpeta output de ComfyUI: asi
- * la interfaz no puede pedir un archivo arbitrario del disco aunque le pasen
- * una ruta manipulada con "..".
+ * Solo entrega archivos dentro de esas dos raices: asi la interfaz no puede
+ * pedir un archivo arbitrario del disco aunque le pasen una ruta manipulada
+ * con "..".
  */
 function registerImageProtocol(): void {
   protocol.handle(IMAGE_SCHEME, async (request) => {
@@ -78,10 +80,11 @@ function registerImageProtocol(): void {
     const requested = decodeURIComponent(url.searchParams.get('path') ?? '')
     if (!requested) return new Response('Falta el parametro path', { status: 400 })
 
-    const root = resolve(join(getSettings().comfyPath, 'output'))
+    const roots = [resolve(join(getSettings().comfyPath, 'output')), resolve(presetsImagesRoot())]
     const target = resolve(normalize(requested))
 
-    if (target !== root && !target.startsWith(root + sep)) {
+    const allowed = roots.some((root) => target === root || target.startsWith(root + sep))
+    if (!allowed) {
       return new Response('Ruta fuera de la carpeta permitida', { status: 403 })
     }
     return net.fetch(pathToFileURL(target).toString())
