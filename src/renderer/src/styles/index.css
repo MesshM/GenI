@@ -241,6 +241,106 @@ body {
   initial-value: 100%;
 }
 
+/* Variante para estilos que solo aplican en oscuro. */
+@custom-variant dark (&:where(html[data-theme='oscuro'], html[data-theme='oscuro'] *));
+
+/* ───────────────────────── Tema oscuro ─────────────────────────
+   Solo se intercambian variables: como las utilidades emiten var(),
+   toda la interfaz se re-tine sin tocar un solo componente.
+
+   Fondo negro grisaceo, paneles en negros mas profundos, texto blanco.
+   Lo seleccionado va en crema; lo no seleccionado, en gris.
+   ─────────────────────────────────────────────────────────────── */
+html[data-theme='oscuro'] {
+  --background: oklch(0.205 0.008 264);
+
+  /* Los "grids" y paneles caen mas oscuros que el fondo. */
+  --warm-100: oklch(0.165 0.007 264);
+  --warm-200: oklch(0.135 0.006 264);
+
+  /* Texto: blanco arriba de la escala, gris hacia abajo. */
+  --color-ink-900: oklch(0.97 0.004 260);
+  --color-ink-800: oklch(0.93 0.005 260);
+  --color-ink-700: oklch(0.86 0.006 260);
+  --color-ink-600: oklch(0.72 0.008 260);
+  --color-ink-500: oklch(0.63 0.009 260);
+  --color-ink-400: oklch(0.54 0.009 260);
+  --color-ink-300: oklch(0.44 0.008 260);
+
+  /* Lo activo se pinta en crema, no en azul. */
+  --color-cobalt-700: oklch(0.94 0.032 88);
+  --color-cobalt-600: oklch(0.9 0.038 88);
+  --color-cobalt-500: oklch(0.84 0.042 88);
+  --color-cobalt-hi: oklch(0.86 0.04 84);
+  --color-cielo-400: oklch(0.88 0.03 90);
+
+  /* Bordes y neutros translucidos, apagados sobre negro. */
+  --color-line: oklch(0.34 0.008 264);
+  --color-line2: oklch(0.3 0.008 264);
+  --color-fog: oklch(0.4 0.008 264);
+  --color-tint: oklch(0.72 0.05 88);
+  --color-mist: oklch(0.42 0.01 264);
+  --color-steel: oklch(0.4 0.01 264);
+  --color-halo: oklch(0.78 0.05 88);
+
+  /* Estados: mismos tonos, algo mas luminosos para leerse sobre negro. */
+  --color-green: oklch(0.74 0.14 158);
+  --color-green-bg: oklch(0.28 0.05 160);
+  --color-green-deep: oklch(0.82 0.12 158);
+  --color-rose: oklch(0.72 0.16 18);
+  --color-rose-bg: oklch(0.28 0.06 20);
+  --color-rose-text: oklch(0.82 0.13 20);
+  --color-amber: oklch(0.82 0.13 78);
+
+  /* Vidrio: pasa de blanco translucido a negro translucido. */
+  --glass-fill: linear-gradient(157deg, rgba(30, 32, 38, 0.86) 0%, rgba(22, 24, 29, 0.72) 100%);
+  --glass-fill-strong: linear-gradient(
+    157deg,
+    rgba(34, 36, 43, 0.96) 0%,
+    rgba(24, 26, 32, 0.9) 100%
+  );
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+
+  /* Sombras: sobre negro el azul no se ve; se usa negro puro. */
+  --shadow-soft: 0 2px 8px -4px rgba(0, 0, 0, 0.7);
+  --shadow-lift: 0 10px 26px -16px rgba(0, 0, 0, 0.9), 0 3px 10px -8px rgba(0, 0, 0, 0.7);
+  --shadow-deep: 0 28px 60px -30px rgba(0, 0, 0, 0.95), 0 8px 20px -16px rgba(0, 0, 0, 0.8);
+  --shadow-blue: 0 12px 30px -14px rgba(0, 0, 0, 0.8);
+  --shadow-frame: inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    inset 0 0 26px -6px rgba(0, 0, 0, 0.5);
+
+  /* El boton primario deja de ser azul: crema con texto oscuro. */
+  --background-image-cta: linear-gradient(135deg, oklch(0.93 0.035 88), oklch(0.88 0.04 84));
+  --background-image-wordmark: linear-gradient(120deg, oklch(0.95 0.03 88), oklch(0.85 0.05 80));
+  --background-image-bloom: radial-gradient(
+      120% 90% at 88% -8%,
+      oklch(0.32 0.012 264 / 0.9) 0%,
+      transparent 50%
+    ),
+    radial-gradient(95% 80% at -6% 108%, oklch(0.26 0.01 264 / 0.8) 0%, transparent 52%),
+    linear-gradient(168deg, var(--warm-100) 0%, oklch(0.15 0.006 264) 60%, var(--warm-200) 100%);
+}
+
+/* El fondo de la ventana pierde los halos azules en oscuro. */
+html[data-theme='oscuro'] body {
+  background: var(--background);
+}
+
+/* Sobre crema, el texto del boton primario tiene que ser oscuro. */
+html[data-theme='oscuro'] .bg-cta {
+  color: oklch(0.2 0.01 264);
+}
+
+html[data-theme='oscuro'] input[type='range'] {
+  background: oklch(0.32 0.008 264);
+}
+
+html[data-theme='oscuro'] input[type='range']::-webkit-slider-thumb {
+  background: oklch(0.92 0.035 88);
+  border-color: oklch(0.2 0.01 264);
+}
+
 /* Utilidades compuestas: vidrio y scrollbar fino. */
 @utility glass {
   background: var(--glass-fill);

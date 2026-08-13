@@ -1,6 +1,9 @@
 import { useState } from 'react'
-import { useStore, type View } from '../store/useStore'
+import { useStore, imageUrl, type View } from '../store/useStore'
 import { Icon } from './ui/icon'
+import { Button } from './ui/button'
+import { ModalRoot, ModalTrigger } from './ui/modal'
+import SettingsDialog from './SettingsDialog'
 import { cn } from '@/lib/utils'
 
 const NAV: { view: View; icon: string; label: string }[] = [
@@ -9,34 +12,55 @@ const NAV: { view: View; icon: string; label: string }[] = [
 ]
 
 /**
- * Marco lateral plano (sin tarjeta propia), contraible.
- * El logo es el boton de contraer: cada item se cierra en circulo y el texto
- * se difumina con --wipe, sin que el icono se mueva de su posicion.
+ * Marco lateral plano y contraible. Contiene navegacion, el historial de
+ * conversaciones y los ajustes.
+ *
+ * Expandido cada boton es una pildora; contraido se cierra en circulo sin que
+ * el icono cambie de posicion: solo se anima el ancho y el padding derecho.
  */
-export default function Sidebar({ onSettings }: { onSettings: () => void }): React.JSX.Element {
+export default function Sidebar(): React.JSX.Element {
   const view = useStore((s) => s.view)
   const setView = useStore((s) => s.setView)
   const models = useStore((s) => s.models)
+  const conversations = useStore((s) => s.conversations)
+  const activeId = useStore((s) => s.activeId)
+  const recipes = useStore((s) => s.recipes)
+  const select = useStore((s) => s.selectConversation)
+  const create = useStore((s) => s.newConversation)
+  const remove = useStore((s) => s.removeConversation)
+  const rename = useStore((s) => s.renameConversation)
+
   const [collapsed, setCollapsed] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [editing, setEditing] = useState<string | null>(null)
+  const [draft, setDraft] = useState('')
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+
+  function commitRename(): void {
+    if (editing && draft.trim()) void rename(editing, draft.trim())
+    setEditing(null)
+  }
 
   return (
     <aside
       data-collapsed={collapsed || undefined}
-      className="group/side flex w-[248px] shrink-0 flex-col px-3 py-4 transition-[width] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] data-collapsed:w-[80px]"
+      className="group/side flex w-[262px] shrink-0 flex-col px-3 py-4 transition-[width] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] data-collapsed:w-[84px]"
     >
+      {/* El logo es el boton de contraer. */}
       <button
         onClick={() => setCollapsed((v) => !v)}
         title={collapsed ? 'Expandir' : 'Contraer'}
-        className="no-drag mb-6 flex h-11 items-center gap-2.5 rounded-box px-2 transition-colors hover:bg-white/50"
+        className="no-drag mb-5 flex h-12 items-center rounded-full pl-[9px] pr-4 transition-colors hover:bg-white/45 group-data-collapsed/side:pr-[9px] dark:hover:bg-white/8"
       >
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[11px] bg-cta text-white shadow-blue">
+        <span className="grid h-[38px] w-[38px] shrink-0 place-items-center rounded-full bg-cta shadow-blue">
           <Icon name="brush" filled className="text-[20px]" />
         </span>
-        <span className="overflow-hidden whitespace-nowrap bg-wordmark bg-clip-text text-[19px] font-extrabold tracking-tight text-transparent transition-opacity duration-200 group-data-collapsed/side:opacity-0">
+        <span className="ml-2.5 overflow-hidden whitespace-nowrap bg-wordmark bg-clip-text text-[19px] font-extrabold tracking-tight text-transparent transition-opacity duration-200 group-data-collapsed/side:opacity-0">
           GenI
         </span>
       </button>
 
+      {/* Navegacion */}
       <nav className="flex flex-col gap-1.5">
         {NAV.map((item) => {
           const active = view === item.view
@@ -46,17 +70,15 @@ export default function Sidebar({ onSettings }: { onSettings: () => void }): Rea
               onClick={() => setView(item.view)}
               title={item.label}
               className={cn(
-                'no-drag relative flex h-[46px] items-center rounded-box pl-[13px] pr-4 text-[14px] font-bold transition-[background,color,box-shadow] duration-200 group-data-collapsed/side:pr-[13px]',
+                'no-drag flex h-[46px] items-center rounded-full pl-[11px] pr-4 text-[14px] font-bold transition-[background,color,box-shadow,padding] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-data-collapsed/side:pr-[11px]',
                 active
-                  ? 'bg-white/85 text-cobalt-700 shadow-soft'
-                  : 'text-ink-600 hover:bg-white/55 hover:text-ink-800'
+                  ? 'bg-white/85 text-cobalt-700 shadow-soft dark:bg-white/10'
+                  : 'text-ink-500 hover:bg-white/50 hover:text-ink-700 dark:hover:bg-white/6'
               )}
             >
-              <Icon
-                name={item.icon}
-                filled={active}
-                className="shrink-0 text-[21px]"
-              />
+              <span className="grid h-6 w-6 shrink-0 place-items-center">
+                <Icon name={item.icon} filled={active} className="text-[21px]" />
+              </span>
               <span className="ml-3 overflow-hidden whitespace-nowrap transition-opacity duration-200 group-data-collapsed/side:opacity-0">
                 {item.label}
               </span>
@@ -70,18 +92,165 @@ export default function Sidebar({ onSettings }: { onSettings: () => void }): Rea
         })}
       </nav>
 
-      <div className="flex-1" />
+      {/* Conversaciones: solo tienen sentido en la vista de generar. */}
+      <div className="mt-5 flex min-h-0 flex-1 flex-col group-data-collapsed/side:hidden">
+        <div className="mb-2 flex items-center justify-between px-2">
+          <span className="text-[11px] font-extrabold uppercase tracking-wider text-ink-400">
+            Conversaciones
+          </span>
+          <button
+            onClick={() => void create()}
+            title="Nueva conversacion"
+            className="grid h-6 w-6 place-items-center rounded-full text-ink-400 transition-colors hover:bg-white/60 hover:text-cobalt-600 dark:hover:bg-white/8"
+          >
+            <Icon name="add" className="text-[17px]" />
+          </button>
+        </div>
 
-      <button
-        onClick={onSettings}
-        title="Ajustes"
-        className="no-drag flex h-[46px] items-center rounded-box pl-[13px] pr-4 text-[14px] font-bold text-ink-600 transition-colors hover:bg-white/55 hover:text-ink-800 group-data-collapsed/side:pr-[13px]"
-      >
-        <Icon name="settings" className="shrink-0 text-[21px]" />
-        <span className="ml-3 overflow-hidden whitespace-nowrap transition-opacity duration-200 group-data-collapsed/side:opacity-0">
-          Ajustes
-        </span>
-      </button>
+        <div className="scroll -mx-1 flex-1 px-1">
+          {conversations.length === 0 && (
+            <p className="px-2 py-6 text-center text-[11px] leading-snug text-ink-400">
+              Todavia no hay conversaciones
+            </p>
+          )}
+
+          {conversations.map((c) => {
+            const recipe = recipes.find((r) => r.id === c.presetId)
+            const active = c.id === activeId
+
+            return (
+              <div
+                key={c.id}
+                onClick={() => {
+                  void select(c.id)
+                  setView('chat')
+                }}
+                className={cn(
+                  'group mb-1 cursor-pointer rounded-box border p-1.5 transition-all duration-200',
+                  active
+                    ? 'border-white/80 bg-white/80 shadow-soft dark:border-white/10 dark:bg-white/10'
+                    : 'border-transparent hover:bg-white/45 dark:hover:bg-white/6'
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  {c.thumbnail ? (
+                    <img
+                      src={imageUrl(c.thumbnail)}
+                      alt=""
+                      className="h-9 w-9 shrink-0 rounded-chip object-cover shadow-soft"
+                    />
+                  ) : (
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-chip bg-fog/25">
+                      <Icon name="image" className="text-[16px] text-ink-300" />
+                    </span>
+                  )}
+
+                  <div className="min-w-0 flex-1">
+                    {editing === c.id ? (
+                      <input
+                        autoFocus
+                        value={draft}
+                        onChange={(e) => setDraft(e.target.value)}
+                        onBlur={commitRename}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') commitRename()
+                          if (e.key === 'Escape') setEditing(null)
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full rounded border border-cobalt-500 bg-white px-1 text-[12px] text-ink-900 outline-none dark:bg-white/10"
+                      />
+                    ) : (
+                      <p
+                        className={cn(
+                          'truncate text-[12px] font-bold',
+                          active ? 'text-cobalt-700' : 'text-ink-600'
+                        )}
+                      >
+                        {c.title}
+                      </p>
+                    )}
+                    <p className="truncate text-[10px] text-ink-400">
+                      {recipe?.name ?? 'Modelo no disponible'}
+                    </p>
+                  </div>
+
+                  <div className="flex shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setEditing(c.id)
+                        setDraft(c.title)
+                      }}
+                      title="Renombrar"
+                      className="grid h-6 w-6 place-items-center rounded-full text-ink-400 hover:text-cobalt-600"
+                    >
+                      <Icon name="edit" className="text-[14px]" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setConfirmDelete(c.id)
+                      }}
+                      title="Borrar"
+                      className="grid h-6 w-6 place-items-center rounded-full text-ink-400 hover:text-rose"
+                    >
+                      <Icon name="delete" className="text-[14px]" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      <div className="flex-1 group-data-collapsed/side:block hidden" />
+
+      {/* Ajustes: el boton se convierte en el modal (layoutId compartido). */}
+      <ModalRoot isOpen={settingsOpen} onOpenChange={setSettingsOpen}>
+        <ModalTrigger fullWidth radius={999} className="mt-2 overflow-hidden">
+          <div
+            title="Ajustes"
+            className="no-drag flex h-[46px] items-center rounded-full pl-[11px] pr-4 text-[14px] font-bold text-ink-500 transition-[background,color,padding] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:bg-white/50 hover:text-ink-700 group-data-collapsed/side:pr-[11px] dark:hover:bg-white/6"
+          >
+            <span className="grid h-6 w-6 shrink-0 place-items-center">
+              <Icon name="settings" className="text-[21px]" />
+            </span>
+            <span className="ml-3 overflow-hidden whitespace-nowrap transition-opacity duration-200 group-data-collapsed/side:opacity-0">
+              Ajustes
+            </span>
+          </div>
+        </ModalTrigger>
+
+        <SettingsDialog onClose={() => setSettingsOpen(false)} />
+      </ModalRoot>
+
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-ink-900/25 p-6 backdrop-blur-sm">
+          <div className="glass-strong w-full max-w-sm rounded-panel p-5 shadow-deep">
+            <h3 className="text-[15px] font-extrabold text-ink-900">Borrar conversacion</h3>
+            <p className="mt-2 text-[13px] leading-snug text-ink-600">
+              Se borra la conversacion y su historial. Las imagenes ya generadas siguen en la
+              carpeta de salida de ComfyUI.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <Button size="sm" variant="outline" onClick={() => setConfirmDelete(null)}>
+                Cancelar
+              </Button>
+              <Button
+                size="sm"
+                variant="danger"
+                onClick={() => {
+                  void remove(confirmDelete)
+                  setConfirmDelete(null)
+                }}
+              >
+                Borrar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   )
 }

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { applyTheme } from '../lib/theme'
 import type {
   AppSettings,
   ComfyStatus,
@@ -84,6 +85,7 @@ export const useStore = create<State>((set, get) => ({
 
   async bootstrap() {
     const settings = await window.geni.settings.get()
+    applyTheme(settings.theme)
 
     // Sin ruta de ComfyUI no hay carpetas que escanear todavia.
     if (settings.comfyPath) await window.geni.models.scan()
@@ -307,6 +309,7 @@ export const useStore = create<State>((set, get) => ({
 
   async refreshSettings(patch) {
     const settings = await window.geni.settings.update(patch)
+    applyTheme(settings.theme)
     set({ settings })
   }
 }))
