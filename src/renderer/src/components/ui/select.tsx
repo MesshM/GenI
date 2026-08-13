@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Icon } from './icon'
+import { InfoTip } from './tooltip'
 import { cn } from '@/lib/utils'
 
 export interface SelectOption<T extends string> {
@@ -18,6 +19,7 @@ interface SelectProps<T extends string> {
   onChange: (v: T) => void
   disabled?: boolean
   hint?: string
+  tip?: string
   placeholder?: string
 }
 
@@ -38,6 +40,7 @@ export function Select<T extends string>({
   onChange,
   disabled,
   hint,
+  tip,
   placeholder = 'Elegir...'
 }: SelectProps<T>): React.JSX.Element {
   const [open, setOpen] = useState(false)
@@ -85,9 +88,10 @@ export function Select<T extends string>({
   return (
     <div className="mb-4">
       {label && (
-        <label className="mb-1.5 block text-[11.6px] font-bold uppercase tracking-wider text-ink-500">
+        <span className="mb-1.5 flex items-center gap-1 text-[11.6px] font-bold uppercase tracking-wider text-ink-500">
           {label}
-        </label>
+          {tip && <InfoTip text={tip} />}
+        </span>
       )}
 
       <button

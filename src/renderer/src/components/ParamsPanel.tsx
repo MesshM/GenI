@@ -81,7 +81,10 @@ export default function ParamsPanel(): React.JSX.Element {
       <aside className="shrink-0 py-4 pl-4" style={{ width }}>
         <div className="glass scroll h-full p-5">
         {/* 1. Modelo */}
-        <Section title="Modelo">
+        <Section
+          title="Modelo"
+          tip="El checkpoint o modelo base que genera la imagen. Cada uno tiene su propio estilo y arquitectura."
+        >
           <Select
             value={recipe.id}
             options={recipes.map((r) => ({ value: r.id, label: r.name }))}
@@ -93,11 +96,12 @@ export default function ParamsPanel(): React.JSX.Element {
         {/* 2. LoRAs, justo debajo del modelo */}
         <Section
           title={`LoRAs${params.loras.length ? ` · ${params.loras.length}` : ''}`}
+          tip="Ajustes finos que se suman al modelo base: cambian estilo, expresion, o corrigen detalles como las manos."
           action={
             <button
               onClick={() => setPicking((v) => !v)}
               disabled={availableLoras.length === 0}
-              className="flex items-center gap-1 rounded-chip border border-line/70 bg-white/70 px-2 py-1 text-[11.6px] font-bold text-cobalt-600 shadow-soft transition-colors hover:bg-white disabled:opacity-40 dark:bg-white/6 dark:hover:bg-white/10"
+              className="flex items-center gap-1 rounded-full border border-line/70 bg-white/70 px-2.5 py-1 text-[11.6px] font-bold text-cobalt-600 shadow-soft transition-colors hover:bg-white disabled:opacity-40 dark:bg-white/6 dark:hover:bg-white/10"
             >
               <Icon name="add" className="text-[14.7px]" />
               Agregar
@@ -183,6 +187,7 @@ export default function ParamsPanel(): React.JSX.Element {
                     <Slider
                       dense
                       label="Intensidad"
+                      tip="Cuanto pesa esta LoRA sobre el resultado. Mas alto, mas notorio su efecto."
                       value={lora.strength}
                       min={0}
                       max={1.5}
@@ -235,7 +240,10 @@ export default function ParamsPanel(): React.JSX.Element {
 
         {/* 3. Prompt negativo */}
         {!isFlux && (
-          <Section title="Prompt negativo">
+          <Section
+            title="Prompt negativo"
+            tip="Lo que no queres ver en la imagen. El modelo evita estos elementos."
+          >
             <TextArea
               value={negative}
               onChange={(e) => setNegative(e.target.value)}
@@ -247,7 +255,10 @@ export default function ParamsPanel(): React.JSX.Element {
 
         {/* 4. Resolucion */}
         {recipe.resolutions.length > 0 && !isEdit && (
-          <Section title="Resolucion">
+          <Section
+            title="Resolucion"
+            tip="Tamano final de la imagen. Resoluciones muy grandes tardan mas y usan mas memoria de video."
+          >
             <div className="mb-3 grid grid-cols-2 gap-1.5">
               {recipe.resolutions.map((r) => {
                 const active = params.width === r.width && params.height === r.height
@@ -295,6 +306,7 @@ export default function ParamsPanel(): React.JSX.Element {
         <Section title="Muestreo">
           <Slider
             label="Pasos"
+            tip="Cuantas veces el modelo refina la imagen. Mas pasos, mas detalle, pero mas lento."
             value={params.steps}
             min={1}
             max={80}
@@ -303,6 +315,11 @@ export default function ParamsPanel(): React.JSX.Element {
           />
           <Slider
             label={isFlux ? 'Guia' : 'CFG'}
+            tip={
+              isFlux
+                ? 'Cuanto sigue el modelo tu prompt al pie de la letra.'
+                : 'Cuanto sigue el modelo tu prompt. Muy alto puede saturar colores o generar artefactos.'
+            }
             value={params.cfg}
             min={0}
             max={20}
@@ -312,12 +329,14 @@ export default function ParamsPanel(): React.JSX.Element {
           />
           <Select
             label="Sampler"
+            tip="El metodo matematico que usa el modelo para llegar a la imagen final. Cada uno da resultados ligeramente distintos."
             value={params.samplerName}
             options={SAMPLERS}
             onChange={(samplerName) => patchParams({ samplerName })}
           />
           <Select
             label="Scheduler"
+            tip="Como se reparten los pasos a lo largo de la generacion. Afecta la nitidez y el ritmo del detalle."
             value={params.scheduler}
             options={SCHEDULERS}
             onChange={(scheduler) => patchParams({ scheduler })}
@@ -325,12 +344,13 @@ export default function ParamsPanel(): React.JSX.Element {
           {params.denoise !== undefined && !isFlux && (
             <Slider
               label="Denoise del refinado"
+              tip="Cuanto reinventa la segunda pasada sobre la imagen base."
               value={params.denoise}
               min={0}
               max={1}
               step={0.05}
               onChange={(denoise) => patchParams({ denoise })}
-              hint="Cuanto reinventa la segunda pasada. Sobre 0.6 empieza a cambiar la composicion."
+              hint="Sobre 0.6 empieza a cambiar la composicion."
             />
           )}
         </Section>
@@ -339,21 +359,25 @@ export default function ParamsPanel(): React.JSX.Element {
         <Section title="Semilla">
           <Switch
             label="Aleatoria en cada envio"
+            tip="Si esta activo, cada generacion usa un numero al azar. Desactivalo para repetir siempre la misma composicion base."
             checked={params.randomSeed}
             onChange={(randomSeed) => patchParams({ randomSeed })}
           />
           {!params.randomSeed && (
             <Slider
               label="Valor"
+              tip="El numero que arranca el ruido inicial. Misma semilla + mismos parametros = misma imagen."
               value={params.seed}
               min={0}
               max={4294967295}
               step={1}
+              counterWidth={128}
               onChange={(seed) => patchParams({ seed })}
             />
           )}
           <Slider
             label="Imagenes por envio"
+            tip="Cuantas imagenes genera cada vez que le das a Generar."
             value={params.batchSize}
             min={1}
             max={4}

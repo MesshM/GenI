@@ -1,4 +1,5 @@
 import { Icon } from './icon'
+import { InfoTip } from './tooltip'
 import { cn } from '@/lib/utils'
 
 // Controles de formulario con el acabado de docline: bordes suaves,
@@ -10,11 +11,27 @@ import { cn } from '@/lib/utils'
 const CONTROL =
   'w-full rounded-chip border border-line/70 bg-white/70 px-3 py-2 text-[13.7px] text-ink-800 shadow-[inset_0_1px_2px_rgba(38,54,110,0.04)] outline-none transition-[border-color,box-shadow,background] duration-200 placeholder:text-ink-400 focus:border-halo/50 focus:bg-white focus:ring-4 focus:ring-halo/14 disabled:opacity-50 dark:bg-white/6 dark:focus:bg-white/10'
 
+function Label({
+  children,
+  tip
+}: {
+  children: React.ReactNode
+  tip?: string
+}): React.JSX.Element {
+  return (
+    <span className="mb-1.5 flex items-center gap-1 text-[11.6px] font-bold uppercase tracking-wider text-ink-500">
+      {children}
+      {tip && <InfoTip text={tip} />}
+    </span>
+  )
+}
+
 interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string
   icon?: string
   error?: string
   hint?: string
+  tip?: string
   wrapClassName?: string
 }
 
@@ -23,17 +40,14 @@ export function TextField({
   icon,
   error,
   hint,
+  tip,
   wrapClassName,
   className,
   ...rest
 }: TextFieldProps): React.JSX.Element {
   return (
     <div className={cn('mb-4', wrapClassName)}>
-      {label && (
-        <label className="mb-1.5 block text-[11.6px] font-bold uppercase tracking-wider text-ink-500">
-          {label}
-        </label>
-      )}
+      {label && <Label tip={tip}>{label}</Label>}
       <div className="relative">
         {icon && (
           <Icon
@@ -52,24 +66,28 @@ export function TextField({
 interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string
   hint?: string
+  tip?: string
   wrapClassName?: string
 }
 
 export function TextArea({
   label,
   hint,
+  tip,
   wrapClassName,
   className,
   ...rest
 }: TextAreaProps): React.JSX.Element {
   return (
     <div className={cn('mb-4', wrapClassName)}>
-      {label && (
-        <label className="mb-1.5 block text-[11.6px] font-bold uppercase tracking-wider text-ink-500">
-          {label}
-        </label>
-      )}
-      <textarea className={cn(CONTROL, 'resize-none leading-relaxed', className)} {...rest} />
+      {label && <Label tip={tip}>{label}</Label>}
+      {/* resize-y: tirador en la esquina inferior derecha, solo estira alto
+          para no romper el ancho del panel. scroll: barra fina propia en vez
+          de la del navegador si el contenido no entra. */}
+      <textarea
+        className={cn(CONTROL, 'scroll min-h-[76px] resize-y leading-relaxed', className)}
+        {...rest}
+      />
       {hint && <p className="mt-1 text-[11.6px] leading-snug text-ink-400">{hint}</p>}
     </div>
   )
@@ -83,11 +101,20 @@ interface SliderProps {
   step: number
   onChange: (v: number) => void
   hint?: string
+  tip?: string
   /** Compacto: usado dentro de las tarjetas de LoRA. */
   dense?: boolean
+  /** Ancho del contador numerico. Por defecto 70px; la semilla usa mas. */
+  counterWidth?: number
 }
 
-/** Deslizador con el valor editable a mano, como en Civitai. */
+/** Redondea al step evitando el arrastre de coma flotante (0.1+0.2 etc). */
+function roundToStep(n: number, step: number): number {
+  const precision = (step.toString().split('.')[1] ?? '').length
+  return Number(n.toFixed(precision))
+}
+
+/** Deslizador con el valor editable a mano y flechas propias, como en Civitai. */
 export function Slider({
   label,
   value,
@@ -96,25 +123,49 @@ export function Slider({
   step,
   onChange,
   hint,
-  dense
+  tip,
+  dense,
+  counterWidth = 70
 }: SliderProps): React.JSX.Element {
   const clamp = (n: number): number => Math.min(max, Math.max(min, n))
+  const bump = (delta: number): void => onChange(clamp(roundToStep(value + delta, step)))
 
   return (
     <div className={dense ? 'mb-2' : 'mb-4'}>
       <div className="mb-1.5 flex items-baseline justify-between gap-2">
-        <label className="text-[11.6px] font-bold uppercase tracking-wider text-ink-500">
-          {label}
-        </label>
-        <input
-          type="number"
-          value={value}
-          min={min}
-          max={max}
-          step={step}
-          onChange={(e) => onChange(clamp(Number(e.target.value)))}
-          className="w-[70px] rounded-[8px] border border-line/70 bg-white/80 px-1.5 py-0.5 text-right text-[12.6px] font-bold text-ink-800 outline-none focus:border-halo/50 focus:ring-2 focus:ring-halo/14 dark:bg-white/6"
-        />
+        <Label tip={tip}>{label}</Label>
+        <div className="relative shrink-0" style={{ width: counterWidth }}>
+          <input
+            type="number"
+            value={value}
+            min={min}
+            max={max}
+            step={step}
+            onChange={(e) => onChange(clamp(Number(e.target.value)))}
+            className="w-full rounded-[8px] border border-line/70 bg-white/80 py-0.5 pl-1.5 pr-4 text-right text-[12.6px] font-bold text-ink-800 outline-none focus:border-halo/50 focus:ring-2 focus:ring-halo/14 dark:bg-white/6"
+          />
+          {/* Flechas propias: las del navegador no se pueden estilar. */}
+          <div className="absolute inset-y-[3px] right-[3px] flex w-[14px] flex-col overflow-hidden rounded-[5px]">
+            <button
+              type="button"
+              tabIndex={-1}
+              aria-label="Aumentar"
+              onClick={() => bump(step)}
+              className="flex flex-1 items-center justify-center bg-black/[0.03] text-ink-400 transition-colors hover:bg-tint/20 hover:text-cobalt-600 dark:bg-white/6 dark:hover:bg-white/16"
+            >
+              <Icon name="arrow_drop_up" className="text-[13px]" />
+            </button>
+            <button
+              type="button"
+              tabIndex={-1}
+              aria-label="Disminuir"
+              onClick={() => bump(-step)}
+              className="flex flex-1 items-center justify-center border-t border-line/40 bg-black/[0.03] text-ink-400 transition-colors hover:bg-tint/20 hover:text-cobalt-600 dark:bg-white/6 dark:hover:bg-white/16"
+            >
+              <Icon name="arrow_drop_down" className="text-[13px]" />
+            </button>
+          </div>
+        </div>
       </div>
       <input
         type="range"
@@ -133,15 +184,20 @@ export function Slider({
 export function Switch({
   checked,
   onChange,
-  label
+  label,
+  tip
 }: {
   checked: boolean
   onChange: (v: boolean) => void
   label: string
+  tip?: string
 }): React.JSX.Element {
   return (
     <label className="mb-3 flex cursor-pointer items-center justify-between gap-3">
-      <span className="text-[13.7px] font-semibold text-ink-700">{label}</span>
+      <span className="flex items-center gap-1 text-[13.7px] font-semibold text-ink-700">
+        {label}
+        {tip && <InfoTip text={tip} />}
+      </span>
       <button
         type="button"
         role="switch"
@@ -168,17 +224,20 @@ export function Switch({
 export function Section({
   title,
   action,
+  tip,
   children
 }: {
   title: string
   action?: React.ReactNode
+  tip?: string
   children: React.ReactNode
 }): React.JSX.Element {
   return (
     <section className="mb-6">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h3 className="text-[11.6px] font-extrabold uppercase tracking-wider text-ink-500">
+        <h3 className="flex items-center gap-1 text-[11.6px] font-extrabold uppercase tracking-wider text-ink-500">
           {title}
+          {tip && <InfoTip text={tip} />}
         </h3>
         {action}
       </div>

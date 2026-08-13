@@ -62,7 +62,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       ref={ref}
       disabled={disabled || loading}
       className={cn(
-        'inline-flex cursor-pointer select-none items-center justify-center gap-2 whitespace-nowrap rounded-box border border-transparent font-sans font-bold transition-[transform,box-shadow,filter,background,color,border-color] duration-200 ease-[cubic-bezier(0.2,0.8,0.2,1)] active:translate-y-0 disabled:pointer-events-none disabled:cursor-default disabled:opacity-55',
+        // rounded-full: pildora, igual criterio que los botones del sidebar.
+        'inline-flex cursor-pointer select-none items-center justify-center gap-2 whitespace-nowrap rounded-full border border-transparent font-sans font-bold transition-[transform,box-shadow,filter,background,color,border-color] duration-200 ease-[cubic-bezier(0.2,0.8,0.2,1)] active:translate-y-0 disabled:pointer-events-none disabled:cursor-default disabled:opacity-55',
         VARIANT[variant],
         SIZE[size],
         iconOnly && ICON_ONLY[size],

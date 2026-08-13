@@ -24,6 +24,7 @@ export default function MessageBubble({ message, progress }: Props): React.JSX.E
   }
 
   const activeLoras = message.params.loras.filter((l) => l.enabled)
+  const cols = message.params.batchSize > 1 ? 'grid-cols-2' : 'grid-cols-1'
 
   return (
     <article className="mb-4 animate-fade-up rounded-panel border border-white/75 bg-white/60 p-4 shadow-soft backdrop-blur dark:border-white/10 dark:bg-white/6">
@@ -66,6 +67,18 @@ export default function MessageBubble({ message, progress }: Props): React.JSX.E
           >
             Cancelar
           </button>
+
+          {/* Placeholders grises con barrido de brillo, uno por imagen del
+              lote, con la proporcion final para que no salten al terminar. */}
+          <div className={cn('mt-3 grid gap-2.5', cols)}>
+            {Array.from({ length: message.params.batchSize }).map((_, i) => (
+              <div
+                key={i}
+                className="skeleton rounded-box"
+                style={{ aspectRatio: `${message.params.width} / ${message.params.height}` }}
+              />
+            ))}
+          </div>
         </div>
       )}
 
@@ -81,12 +94,7 @@ export default function MessageBubble({ message, progress }: Props): React.JSX.E
       )}
 
       {message.generations.length > 0 && (
-        <div
-          className={cn(
-            'mt-4 grid gap-2.5',
-            message.generations.length === 1 ? 'grid-cols-1' : 'grid-cols-2'
-          )}
-        >
+        <div className={cn('mt-4 grid gap-2.5', cols)}>
           {message.generations.map((g) => (
             <figure
               key={g.id}
@@ -164,7 +172,10 @@ function ImgBtn({
     <button
       onClick={onClick}
       title={label}
-      className="inline-flex items-center gap-1 rounded-chip bg-white/25 px-2 py-1 text-[11.6px] font-bold text-white backdrop-blur transition-colors hover:bg-white/40"
+      // Negro fijo (no un token que se invierte en oscuro): este boton flota
+      // sobre una imagen generada de colores arbitrarios, no sobre el chrome
+      // de la app, asi que necesita su propio contraste siempre igual.
+      className="inline-flex items-center gap-1 rounded-full bg-white/85 px-2.5 py-1 text-[11.6px] font-bold text-black backdrop-blur transition-colors hover:bg-white"
     >
       <Icon name={icon} className="text-[14.7px]" />
       {label}

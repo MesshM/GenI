@@ -1,6 +1,6 @@
 {
   "name": "geni",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Interfaz de chat para generar imagenes con ComfyUI en local",
   "main": "./out/main/index.js",
   "author": "MesshM",

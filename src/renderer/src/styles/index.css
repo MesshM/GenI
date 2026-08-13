@@ -161,6 +161,14 @@
       transform: rotate(360deg);
     }
   }
+  @keyframes shimmer {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(100%);
+    }
+  }
 }
 
 :root {
@@ -407,4 +415,39 @@ input[type='range']::-webkit-slider-thumb {
 
 input[type='range']::-webkit-slider-thumb:hover {
   transform: scale(1.15);
+}
+
+/* Numero: se ocultan las flechas por defecto del navegador; Slider dibuja
+   las suyas propias (stepper a la derecha del input). */
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Placeholder gris "esqueleto" mientras se genera: un barrido de brillo
+   cruza el bloque, como el loading de un listado. */
+@utility skeleton {
+  position: relative;
+  overflow: hidden;
+  background: oklch(0.87 0.012 262 / 0.55);
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.65), transparent);
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+}
+
+html[data-theme='oscuro'] .skeleton {
+  background: oklch(0.3 0.008 264 / 0.7);
+}
+html[data-theme='oscuro'] .skeleton::after {
+  background: linear-gradient(90deg, transparent, oklch(0.46 0.008 264 / 0.8), transparent);
 }
