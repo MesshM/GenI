@@ -27,6 +27,18 @@ export interface BuildInput {
   negative: string
   /** Nombre del archivo ya subido a ComfyUI, para los flujos de edicion. */
   inputImageName?: string
+  /** Se usa para que ComfyUI escriba cada imagen en su propia subcarpeta. */
+  conversationId: string
+}
+
+/**
+ * ComfyUI crea subcarpetas solo con pasarle barras en filename_prefix
+ * (verificado contra la API real). Escribir cada conversacion en la suya
+ * es lo que despues permite comprimir/descomprimir por conversacion sin
+ * tener que mover archivos a mano.
+ */
+function savePrefix(conversationId: string): string {
+  return `geni/${conversationId}/GenI`
 }
 
 export function buildWorkflow(input: BuildInput): ComfyWorkflow {
@@ -97,7 +109,7 @@ export function baseResolution(
 
 // ------------------------------------------------------------------ SDXL
 
-function buildSdxl({ recipe, params, prompt, negative }: BuildInput): ComfyWorkflow {
+function buildSdxl({ recipe, params, prompt, negative, conversationId }: BuildInput): ComfyWorkflow {
   const bag = new NodeBag()
 
   if (!recipe.checkpoint) throw new Error('Esta receta no tiene checkpoint elegido')
@@ -167,14 +179,14 @@ function buildSdxl({ recipe, params, prompt, negative }: BuildInput): ComfyWorkf
   }
 
   const decode = bag.add('VAEDecode', { samples: finalLatent, vae: [ckpt, 2] })
-  bag.add('SaveImage', { images: [decode, 0], filename_prefix: 'GenI' })
+  bag.add('SaveImage', { images: [decode, 0], filename_prefix: savePrefix(conversationId) })
 
   return bag.nodes
 }
 
 // ------------------------------------------------------------------ FLUX
 
-function buildFlux({ recipe, params, prompt }: BuildInput): ComfyWorkflow {
+function buildFlux({ recipe, params, prompt, conversationId }: BuildInput): ComfyWorkflow {
   const bag = new NodeBag()
 
   if (!recipe.unet) throw new Error('Esta receta no tiene modelo de difusion elegido')
@@ -222,14 +234,20 @@ function buildFlux({ recipe, params, prompt }: BuildInput): ComfyWorkflow {
   })
 
   const decode = bag.add('VAEDecode', { samples: [sampler, 0], vae: [vae, 0] })
-  bag.add('SaveImage', { images: [decode, 0], filename_prefix: 'GenI' })
+  bag.add('SaveImage', { images: [decode, 0], filename_prefix: savePrefix(conversationId) })
 
   return bag.nodes
 }
 
 // ---------------------------------------------------------- FLUX Kontext
 
-function buildFluxKontext({ recipe, params, prompt, inputImageName }: BuildInput): ComfyWorkflow {
+function buildFluxKontext({
+  recipe,
+  params,
+  prompt,
+  inputImageName,
+  conversationId
+}: BuildInput): ComfyWorkflow {
   const bag = new NodeBag()
 
   if (!inputImageName) throw new Error('Este flujo necesita una imagen de entrada')
@@ -281,7 +299,7 @@ function buildFluxKontext({ recipe, params, prompt, inputImageName }: BuildInput
   })
 
   const decode = bag.add('VAEDecode', { samples: [sampler, 0], vae: [vae, 0] })
-  bag.add('SaveImage', { images: [decode, 0], filename_prefix: 'GenI' })
+  bag.add('SaveImage', { images: [decode, 0], filename_prefix: savePrefix(conversationId) })
 
   return bag.nodes
 }

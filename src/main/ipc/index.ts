@@ -16,7 +16,18 @@ import {
 } from '../models/manager'
 import { downloader } from '../models/download'
 import { createPreset, deletePreset, isImageFile, listPresets } from '../presets/manager'
-import { detectComfy, getSettings, isComfyFolder, updateSettings } from '../settings'
+import {
+  compressConversation,
+  decompressConversation,
+  deleteConversationFiles
+} from '../conversations/archive'
+import {
+  detectComfy,
+  getSettings,
+  isComfyFolder,
+  setLastActiveConversation,
+  updateSettings
+} from '../settings'
 import { updater } from '../updater'
 import type { AppSettings, CreatePresetInput, ImportResult, SubmitInput } from '@shared/types'
 
@@ -243,10 +254,21 @@ export function registerIpc(getWindow: () => BrowserWindow | null): void {
   ipcMain.handle(CH.convRename, (_e, id: unknown, title: unknown) =>
     conversationsRepo.rename(asId(id, 'id'), asString(title, 'title', 300))
   )
-  ipcMain.handle(CH.convRemove, (_e, id: unknown) => conversationsRepo.remove(asId(id, 'id')))
+  ipcMain.handle(CH.convRemove, async (_e, id: unknown) => {
+    const convId = asId(id, 'id')
+    conversationsRepo.remove(convId)
+    // Best-effort: si falla no hay que romper el borrado, ya se fue de la base.
+    await deleteConversationFiles(convId).catch(() => undefined)
+  })
   ipcMain.handle(CH.convMessages, (_e, id: unknown) =>
     messagesRepo.byConversation(asId(id, 'id'))
   )
+
+  ipcMain.handle(CH.convDecompress, (_e, id: unknown) => decompressConversation(asId(id, 'id')))
+  ipcMain.handle(CH.convCompress, (_e, id: unknown) => compressConversation(asId(id, 'id')))
+  ipcMain.handle(CH.convSetActive, (_e, id: unknown) => {
+    setLastActiveConversation(asId(id, 'id'))
+  })
 
   // --- generacion
   ipcMain.handle(CH.genSubmit, (_e, input: unknown) => generator.submit(asSubmitInput(input)))

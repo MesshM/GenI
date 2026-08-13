@@ -33,6 +33,9 @@ export const CH = {
   convRename: 'conv:rename',
   convRemove: 'conv:remove',
   convMessages: 'conv:messages',
+  convDecompress: 'conv:decompress',
+  convCompress: 'conv:compress',
+  convSetActive: 'conv:setActive',
 
   genSubmit: 'gen:submit',
   genCancel: 'gen:cancel',

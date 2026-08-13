@@ -1,12 +1,14 @@
 import { app, BrowserWindow, net, protocol, shell } from 'electron'
-import { join, normalize, resolve, sep } from 'node:path'
+import { existsSync } from 'node:fs'
+import { extname, join, normalize, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { closeDatabase, openDatabase } from './db'
 import { messagesRepo } from './db/repositories'
 import { registerIpc } from './ipc'
 import { comfyProcess } from './comfy/process'
 import { comfyClient } from './comfy/client'
-import { getSettings } from './settings'
+import { compressConversation, resolveFromZip } from './conversations/archive'
+import { getLastActiveConversation, getSettings } from './settings'
 import { presetsImagesRoot } from './presets/manager'
 import { updater } from './updater'
 
@@ -66,6 +68,14 @@ function createWindow(): void {
   }
 }
 
+const MIME_BY_EXT: Record<string, string> = {
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
+  '.gif': 'image/gif'
+}
+
 /**
  * Sirve imagenes al renderer: las generadas por ComfyUI y las de referencia
  * de los presets, que viven en carpetas distintas.
@@ -73,6 +83,11 @@ function createWindow(): void {
  * Solo entrega archivos dentro de esas dos raices: asi la interfaz no puede
  * pedir un archivo arbitrario del disco aunque le pasen una ruta manipulada
  * con "..".
+ *
+ * Si el archivo no esta en disco (la conversacion esta comprimida) se
+ * intenta servir la misma imagen desde su .zip — asi las miniaturas de
+ * conversaciones inactivas siguen mostrandose sin tener que descomprimir
+ * todo el historial solo para pintar el sidebar.
  */
 function registerImageProtocol(): void {
   protocol.handle(IMAGE_SCHEME, async (request) => {
@@ -87,7 +102,18 @@ function registerImageProtocol(): void {
     if (!allowed) {
       return new Response('Ruta fuera de la carpeta permitida', { status: 403 })
     }
-    return net.fetch(pathToFileURL(target).toString())
+
+    if (existsSync(target)) {
+      return net.fetch(pathToFileURL(target).toString())
+    }
+
+    const fromZip = resolveFromZip(target)
+    if (fromZip) {
+      const mime = MIME_BY_EXT[extname(target).toLowerCase()] ?? 'application/octet-stream'
+      return new Response(fromZip, { headers: { 'Content-Type': mime } })
+    }
+
+    return new Response('No encontrado', { status: 404 })
   })
 }
 
@@ -129,9 +155,24 @@ if (!app.requestSingleInstanceLock()) {
     app.quit()
   })
 
-  app.on('before-quit', () => {
-    comfyClient.disconnect()
-    comfyProcess.stop()
-    closeDatabase()
+  // Comprimir es async, pero 'before-quit' no espera promesas: se frena la
+  // primera vez, se hace el trabajo, y se vuelve a pedir el quit ya listo
+  // para salir de verdad (con la bandera evitando el segundo intento).
+  let readyToQuit = false
+  app.on('before-quit', (event) => {
+    if (readyToQuit) return
+    event.preventDefault()
+
+    void (async () => {
+      const lastActive = getLastActiveConversation()
+      if (lastActive) await compressConversation(lastActive).catch(() => undefined)
+
+      comfyClient.disconnect()
+      comfyProcess.stop()
+      closeDatabase()
+
+      readyToQuit = true
+      app.quit()
+    })()
   })
 }

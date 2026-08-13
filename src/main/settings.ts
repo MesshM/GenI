@@ -60,3 +60,18 @@ export function updateSettings(patch: Partial<AppSettings>): AppSettings {
 export function comfyBaseUrl(s: AppSettings = getSettings()): string {
   return `http://${s.comfyHost}:${s.comfyPort}`
 }
+
+const LAST_ACTIVE_CONVERSATION_KEY = 'lastActiveConversationId'
+
+/**
+ * Se persiste en cada cambio de conversacion (no es parte de AppSettings,
+ * que es lo que se expone en el dialogo de Ajustes). Sirve para saber, al
+ * cerrar la app, cual conversacion hay que comprimir antes de salir.
+ */
+export function getLastActiveConversation(): string | null {
+  return settingsRepo.all()[LAST_ACTIVE_CONVERSATION_KEY] ?? null
+}
+
+export function setLastActiveConversation(id: string): void {
+  settingsRepo.set(LAST_ACTIVE_CONVERSATION_KEY, id)
+}

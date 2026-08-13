@@ -76,7 +76,10 @@ const api: GenIApi = {
     create: (presetId) => ipcRenderer.invoke(CH.convCreate, presetId) as Promise<Conversation>,
     rename: (id, title) => ipcRenderer.invoke(CH.convRename, id, title) as Promise<void>,
     remove: (id) => ipcRenderer.invoke(CH.convRemove, id) as Promise<void>,
-    messages: (id) => ipcRenderer.invoke(CH.convMessages, id) as Promise<Message[]>
+    messages: (id) => ipcRenderer.invoke(CH.convMessages, id) as Promise<Message[]>,
+    decompress: (id) => ipcRenderer.invoke(CH.convDecompress, id) as Promise<void>,
+    compress: (id) => ipcRenderer.invoke(CH.convCompress, id) as Promise<void>,
+    setActive: (id) => ipcRenderer.invoke(CH.convSetActive, id) as Promise<void>
   },
   generate: {
     submit: (input: SubmitInput) => ipcRenderer.invoke(CH.genSubmit, input) as Promise<Message>,

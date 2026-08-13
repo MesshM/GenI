@@ -231,6 +231,14 @@ export const useStore = create<State>((set, get) => ({
   },
 
   async selectConversation(id) {
+    const prevId = get().activeId
+
+    // La anterior se comprime en segundo plano (no bloquea el cambio de
+    // vista); la nueva se descomprime antes de mostrar sus imagenes.
+    if (prevId && prevId !== id) void window.geni.conversations.compress(prevId)
+    await window.geni.conversations.decompress(id)
+    void window.geni.conversations.setActive(id)
+
     const messages = await window.geni.conversations.messages(id)
     const conversation = get().conversations.find((c) => c.id === id)
     const recipe = get().recipes.find((r) => r.id === conversation?.presetId)
@@ -248,7 +256,13 @@ export const useStore = create<State>((set, get) => ({
     const id = recipeId ?? get().recipeId ?? get().recipes[0]?.id
     if (!id) return
 
+    // Se deja comprimida la que estaba activa: la nueva arranca vacia, no
+    // hace falta descomprimir nada para ella.
+    const prevId = get().activeId
+    if (prevId) void window.geni.conversations.compress(prevId)
+
     const conversation = await window.geni.conversations.create(id)
+    void window.geni.conversations.setActive(conversation.id)
     const recipe = get().recipes.find((r) => r.id === id)
 
     set((state) => ({

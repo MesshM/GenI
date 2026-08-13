@@ -126,7 +126,8 @@ class Generator extends EventEmitter {
         params,
         prompt: input.prompt,
         negative: input.negative,
-        inputImageName: input.inputImagePath
+        inputImageName: input.inputImagePath,
+        conversationId: input.conversationId
       })
 
       const promptId = await comfyClient.submit(workflow)

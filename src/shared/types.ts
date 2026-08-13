@@ -278,6 +278,12 @@ export interface GenIApi {
     rename(id: string, title: string): Promise<void>
     remove(id: string): Promise<void>
     messages(id: string): Promise<Message[]>
+    /** Descomprime la carpeta de imagenes de la conversacion (si estaba comprimida). */
+    decompress(id: string): Promise<void>
+    /** Comprime la carpeta de imagenes de la conversacion en un .zip. */
+    compress(id: string): Promise<void>
+    /** Recuerda cual es la activa, para saber que comprimir al cerrar la app. */
+    setActive(id: string): Promise<void>
   }
   generate: {
     submit(input: SubmitInput): Promise<Message>
