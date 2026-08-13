@@ -196,9 +196,11 @@ export function Switch({
           checked ? 'bg-cta shadow-blue' : 'bg-fog/50'
         )}
       >
+        {/* left-0 es obligatorio: sin el, el <button> centra la posicion
+            estatica del absolute y el translate-x lo saca del carril. */}
         <span
           className={cn(
-            'absolute top-[3px] h-4 w-4 rounded-full bg-white shadow-soft transition-transform duration-200',
+            'absolute left-0 top-[3px] h-4 w-4 rounded-full bg-white shadow-soft transition-transform duration-200',
             checked ? 'translate-x-[19px]' : 'translate-x-[3px]'
           )}
         />

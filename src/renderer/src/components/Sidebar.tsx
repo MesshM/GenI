@@ -11,13 +11,11 @@ const NAV: { view: View; icon: string; label: string }[] = [
   { view: 'models', icon: 'inventory_2', label: 'Modelos' }
 ]
 
-/**
- * Marco lateral plano y contraible. Contiene navegacion, el historial de
- * conversaciones y los ajustes.
- *
- * Expandido cada boton es una pildora; contraido se cierra en circulo sin que
- * el icono cambie de posicion: solo se anima el ancho y el padding derecho.
- */
+/** Cada boton del sidebar es una pildora. */
+const PILL =
+  'flex h-[46px] items-center rounded-full pl-[11px] pr-4 text-[14px] font-bold transition-[background,color,box-shadow] duration-200'
+
+/** Marco lateral plano: navegacion, historial de conversaciones y ajustes. */
 export default function Sidebar(): React.JSX.Element {
   const view = useStore((s) => s.view)
   const setView = useStore((s) => s.setView)
@@ -30,7 +28,6 @@ export default function Sidebar(): React.JSX.Element {
   const remove = useStore((s) => s.removeConversation)
   const rename = useStore((s) => s.renameConversation)
 
-  const [collapsed, setCollapsed] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
@@ -42,25 +39,16 @@ export default function Sidebar(): React.JSX.Element {
   }
 
   return (
-    <aside
-      data-collapsed={collapsed || undefined}
-      className="group/side flex w-[262px] shrink-0 flex-col px-3 py-4 transition-[width] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] data-collapsed:w-[84px]"
-    >
-      {/* El logo es el boton de contraer. */}
-      <button
-        onClick={() => setCollapsed((v) => !v)}
-        title={collapsed ? 'Expandir' : 'Contraer'}
-        className="no-drag mb-5 flex h-12 items-center rounded-full pl-[9px] pr-4 transition-colors hover:bg-white/45 group-data-collapsed/side:pr-[9px] dark:hover:bg-white/8"
-      >
+    <aside className="flex w-[262px] shrink-0 flex-col px-3 py-4">
+      <div className="mb-5 flex h-12 items-center pl-[9px]">
         <span className="grid h-[38px] w-[38px] shrink-0 place-items-center rounded-full bg-cta shadow-blue">
           <Icon name="brush" filled className="text-[20px]" />
         </span>
-        <span className="ml-2.5 overflow-hidden whitespace-nowrap bg-wordmark bg-clip-text text-[19px] font-extrabold tracking-tight text-transparent transition-opacity duration-200 group-data-collapsed/side:opacity-0">
+        <span className="ml-2.5 bg-wordmark bg-clip-text text-[19px] font-extrabold tracking-tight text-transparent">
           GenI
         </span>
-      </button>
+      </div>
 
-      {/* Navegacion */}
       <nav className="flex flex-col gap-1.5">
         {NAV.map((item) => {
           const active = view === item.view
@@ -68,9 +56,8 @@ export default function Sidebar(): React.JSX.Element {
             <button
               key={item.view}
               onClick={() => setView(item.view)}
-              title={item.label}
               className={cn(
-                'no-drag flex h-[46px] items-center rounded-full pl-[11px] pr-4 text-[14px] font-bold transition-[background,color,box-shadow,padding] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-data-collapsed/side:pr-[11px]',
+                PILL,
                 active
                   ? 'bg-white/85 text-cobalt-700 shadow-soft dark:bg-white/10'
                   : 'text-ink-500 hover:bg-white/50 hover:text-ink-700 dark:hover:bg-white/6'
@@ -79,11 +66,9 @@ export default function Sidebar(): React.JSX.Element {
               <span className="grid h-6 w-6 shrink-0 place-items-center">
                 <Icon name={item.icon} filled={active} className="text-[21px]" />
               </span>
-              <span className="ml-3 overflow-hidden whitespace-nowrap transition-opacity duration-200 group-data-collapsed/side:opacity-0">
-                {item.label}
-              </span>
+              <span className="ml-3">{item.label}</span>
               {item.view === 'models' && models.length > 0 && (
-                <span className="ml-auto rounded-full bg-tint/16 px-2 py-0.5 text-[11px] font-extrabold text-cobalt-600 transition-opacity duration-200 group-data-collapsed/side:opacity-0">
+                <span className="ml-auto rounded-full bg-tint/16 px-2 py-0.5 text-[11px] font-extrabold text-cobalt-600">
                   {models.length}
                 </span>
               )}
@@ -92,8 +77,7 @@ export default function Sidebar(): React.JSX.Element {
         })}
       </nav>
 
-      {/* Conversaciones: solo tienen sentido en la vista de generar. */}
-      <div className="mt-5 flex min-h-0 flex-1 flex-col group-data-collapsed/side:hidden">
+      <div className="mt-5 flex min-h-0 flex-1 flex-col">
         <div className="mb-2 flex items-center justify-between px-2">
           <span className="text-[11px] font-extrabold uppercase tracking-wider text-ink-400">
             Conversaciones
@@ -204,21 +188,19 @@ export default function Sidebar(): React.JSX.Element {
         </div>
       </div>
 
-      <div className="flex-1 group-data-collapsed/side:block hidden" />
-
-      {/* Ajustes: el boton se convierte en el modal (layoutId compartido). */}
+      {/* El boton se convierte en el modal: comparten layoutId. */}
       <ModalRoot isOpen={settingsOpen} onOpenChange={setSettingsOpen}>
         <ModalTrigger fullWidth radius={999} className="mt-2 overflow-hidden">
           <div
-            title="Ajustes"
-            className="no-drag flex h-[46px] items-center rounded-full pl-[11px] pr-4 text-[14px] font-bold text-ink-500 transition-[background,color,padding] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:bg-white/50 hover:text-ink-700 group-data-collapsed/side:pr-[11px] dark:hover:bg-white/6"
+            className={cn(
+              PILL,
+              'text-ink-500 hover:bg-white/50 hover:text-ink-700 dark:hover:bg-white/6'
+            )}
           >
             <span className="grid h-6 w-6 shrink-0 place-items-center">
               <Icon name="settings" className="text-[21px]" />
             </span>
-            <span className="ml-3 overflow-hidden whitespace-nowrap transition-opacity duration-200 group-data-collapsed/side:opacity-0">
-              Ajustes
-            </span>
+            <span className="ml-3">Ajustes</span>
           </div>
         </ModalTrigger>
 

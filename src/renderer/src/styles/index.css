@@ -234,13 +234,6 @@ body {
     'opsz' 24;
 }
 
-/* El texto del sidebar se difumina letra a letra al colapsar. */
-@property --wipe {
-  syntax: '<percentage>';
-  inherits: false;
-  initial-value: 100%;
-}
-
 /* Variante para estilos que solo aplican en oscuro. */
 @custom-variant dark (&:where(html[data-theme='oscuro'], html[data-theme='oscuro'] *));
 
