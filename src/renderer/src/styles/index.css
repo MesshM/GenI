@@ -1,16 +1,189 @@
 @import 'tailwindcss';
 
+/* ───────────────────────────────────────────────────────────────
+   GenI — blancos crema + azules crema, estilo 3D Microsoft 365.
+   Sistema de diseno tomado de docline: los estilos viven como
+   utilidades en los TSX; aqui solo van tokens, variantes,
+   utilidades compuestas y lo irreducible (fuentes, tema oscuro).
+   ─────────────────────────────────────────────────────────────── */
+
+/* Fuentes empaquetadas: la CSP de la app no permite cargar de Google. */
+@font-face {
+  font-family: 'Material Symbols Rounded';
+  font-style: normal;
+  font-weight: 100 700;
+  src: url('../assets/fonts/material-symbols-rounded.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('../assets/fonts/plus-jakarta-sans.woff2') format('woff2');
+}
+
 @theme {
-  --color-bg: #0b0d12;
-  --color-surface: #12151d;
-  --color-surface-2: #181c26;
-  --color-border: #232836;
-  --color-text: #e6e9f0;
-  --color-muted: #8b93a7;
-  --color-accent: #6d7cff;
-  --color-accent-soft: #2a2f4d;
-  --color-danger: #ff6b6b;
-  --color-ok: #4ade80;
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+
+  /* Blancos crema (calidos) */
+  --color-cream-50: oklch(0.995 0.004 95);
+  --color-cream-100: oklch(0.985 0.006 95);
+  --color-cream-200: oklch(0.965 0.009 92);
+  --color-cream-300: oklch(0.94 0.012 90);
+  --color-cream-400: oklch(0.9 0.015 88);
+
+  /* Azules crema (marca) */
+  --color-brand-50: oklch(0.96 0.02 250);
+  --color-brand-100: oklch(0.9 0.05 250);
+  --color-brand-200: oklch(0.82 0.08 250);
+  --color-brand-300: oklch(0.72 0.115 251);
+  --color-brand-400: oklch(0.64 0.145 251);
+  --color-brand-500: oklch(0.58 0.16 252);
+  --color-brand-600: oklch(0.52 0.155 253);
+  --color-brand-700: oklch(0.45 0.135 254);
+
+  /* Marca (muestreado del logo) */
+  --color-cobalt-700: oklch(0.5 0.2 262);
+  --color-cobalt-600: oklch(0.57 0.19 261);
+  --color-cobalt-500: oklch(0.64 0.17 258);
+  --color-cobalt-hi: oklch(0.62 0.18 250);
+  --color-cielo-400: oklch(0.74 0.12 248);
+  --color-cielo-300: oklch(0.83 0.08 244);
+  --color-warm-300: oklch(0.9 0.03 86);
+  --color-warm-200: oklch(0.94 0.022 88);
+  --color-warm-100: oklch(0.965 0.014 90);
+
+  /* Tinta / texto */
+  --color-ink-900: oklch(0.27 0.035 264);
+  --color-ink-800: oklch(0.33 0.032 264);
+  --color-ink-700: oklch(0.4 0.03 263);
+  --color-ink-600: oklch(0.48 0.026 262);
+  --color-ink-500: oklch(0.56 0.022 262);
+  --color-ink-400: oklch(0.66 0.018 260);
+  --color-ink-300: oklch(0.76 0.015 260);
+
+  /* Estados */
+  --color-amber: oklch(0.74 0.13 72);
+  --color-amber-bg: oklch(0.93 0.045 78);
+  --color-amber-deep: oklch(0.52 0.13 62);
+  --color-amber-text: oklch(0.48 0.13 62);
+  --color-green: oklch(0.66 0.13 158);
+  --color-green-bg: oklch(0.93 0.045 160);
+  --color-green-deep: oklch(0.48 0.12 158);
+  --color-rose: oklch(0.64 0.16 18);
+  --color-rose-bg: oklch(0.93 0.045 22);
+  --color-rose-deep: oklch(0.56 0.16 14);
+  --color-rose-text: oklch(0.5 0.16 20);
+  --color-violet: oklch(0.62 0.15 300);
+
+  /* Neutros translucidos (usar con opacidad: bg-tint/16) */
+  --color-tint: oklch(0.72 0.14 258);
+  --color-mist: oklch(0.75 0.06 255);
+  --color-fog: oklch(0.8 0.02 262);
+  --color-line: oklch(0.84 0.02 262);
+  --color-line2: oklch(0.82 0.02 262);
+  --color-steel: oklch(0.78 0.03 262);
+  --color-halo: oklch(0.7 0.12 255);
+
+  /* Radios */
+  --radius-chip: 10px;
+  --radius-box: 14px;
+  --radius-panel: 20px;
+  --radius-shell: 26px;
+
+  /* Sombras */
+  --shadow-3d-sm: 0 1px 2px rgba(38, 57, 110, 0.06), 0 2px 6px rgba(38, 57, 110, 0.05);
+  --shadow-3d-md: 0 2px 6px rgba(38, 57, 110, 0.06), 0 8px 20px rgba(38, 57, 110, 0.08);
+  --shadow-3d-lg: 0 6px 16px rgba(38, 57, 110, 0.08), 0 18px 40px rgba(38, 57, 110, 0.12);
+  --shadow-soft: 0 2px 8px -4px rgba(38, 54, 110, 0.22);
+  --shadow-lift: 0 10px 26px -16px rgba(38, 54, 110, 0.4), 0 3px 10px -8px rgba(38, 54, 110, 0.22);
+  --shadow-deep: 0 28px 60px -30px rgba(33, 49, 104, 0.46), 0 8px 20px -16px rgba(33, 49, 104, 0.28);
+  --shadow-blue: 0 14px 34px -14px oklch(0.57 0.19 261 / 0.45);
+  --shadow-frame: inset 0 0 0 1px rgba(38, 54, 110, 0.08), inset 0 0 26px -6px rgba(38, 54, 110, 0.22);
+  --shadow-glass-sm: var(--glass-edge), var(--shadow-soft);
+  --shadow-glass-md: var(--glass-edge), var(--shadow-lift);
+  --shadow-glass-lg: var(--glass-edge), var(--shadow-deep);
+  --shadow-cta: var(--shadow-blue), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  --shadow-cta-hover: 0 18px 38px -14px oklch(0.57 0.19 261 / 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+
+  /* Fondos compuestos */
+  --background-image-bloom: radial-gradient(
+      120% 90% at 88% -8%,
+      oklch(0.72 0.15 258 / 0.34) 0%,
+      transparent 46%
+    ),
+    radial-gradient(95% 80% at -6% 108%, oklch(0.88 0.05 86 / 0.55) 0%, transparent 50%),
+    radial-gradient(70% 60% at 60% 120%, oklch(0.78 0.1 250 / 0.22) 0%, transparent 55%),
+    linear-gradient(168deg, var(--warm-100) 0%, oklch(0.96 0.018 240) 55%, var(--warm-200) 100%);
+  --background-image-wordmark: linear-gradient(
+    120deg,
+    var(--color-cobalt-600),
+    var(--color-cielo-400)
+  );
+  --background-image-cta: linear-gradient(135deg, var(--color-cobalt-600), var(--color-cobalt-hi));
+  --background-image-cta-danger: linear-gradient(
+    135deg,
+    var(--color-rose),
+    var(--color-rose-deep)
+  );
+
+  /* Animaciones */
+  --animate-fade-up: fade-up 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-pop-in: pop-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-pop-menu: pop-in 0.16s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  --animate-spin-fast: giro 0.7s linear infinite;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.975) translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+  @keyframes giro {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}
+
+:root {
+  --radius: 0.75rem;
+  --background: var(--color-cream-100);
+  --foreground: oklch(0.25 0.018 264);
+
+  --warm-100: oklch(0.965 0.014 90);
+  --warm-200: oklch(0.94 0.022 88);
+
+  --glass-fill: linear-gradient(
+    157deg,
+    rgba(255, 255, 255, 0.78) 0%,
+    rgba(255, 255, 255, 0.52) 100%
+  );
+  --glass-fill-strong: linear-gradient(
+    157deg,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(255, 255, 255, 0.7) 100%
+  );
+  --glass-border: rgba(255, 255, 255, 0.85);
+  --glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35);
 }
 
 html,
@@ -21,31 +194,91 @@ body,
 
 body {
   margin: 0;
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-family:
-    'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, sans-serif;
-  font-size: 14px;
   overflow: hidden;
+  background:
+    radial-gradient(
+      1200px 600px at 100% -10%,
+      color-mix(in oklab, var(--color-brand-100) 40%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      900px 500px at -10% 110%,
+      color-mix(in oklab, var(--color-brand-50) 55%, transparent),
+      transparent 55%
+    ),
+    var(--background);
+  background-attachment: fixed;
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 14px;
 }
 
-/* Barras de scroll discretas, acordes al tema oscuro. */
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 5px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #2f3547;
+.material-symbols-rounded {
+  font-family: 'Material Symbols Rounded';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
 }
 
-/* La barra de titulo se arrastra desde la zona superior. */
+/* El texto del sidebar se difumina letra a letra al colapsar. */
+@property --wipe {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 100%;
+}
+
+/* Utilidades compuestas: vidrio y scrollbar fino. */
+@utility glass {
+  background: var(--glass-fill);
+  backdrop-filter: blur(22px) saturate(1.35);
+  -webkit-backdrop-filter: blur(22px) saturate(1.35);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-edge), var(--shadow-lift);
+  border-radius: var(--radius-shell);
+}
+
+@utility glass-strong {
+  background: var(--glass-fill-strong);
+  backdrop-filter: blur(28px) saturate(1.4);
+  -webkit-backdrop-filter: blur(28px) saturate(1.4);
+  border: 1px solid var(--glass-border);
+}
+
+@utility scroll {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.78 0.03 262 / 0.5) transparent;
+
+  &::-webkit-scrollbar {
+    width: 10px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: oklch(0.78 0.03 262 / 0.45);
+    border-radius: 99px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.7 0.04 262 / 0.6);
+    background-clip: content-box;
+  }
+}
+
+/* La ventana se arrastra desde la topbar. */
 .drag-region {
   -webkit-app-region: drag;
 }
@@ -54,5 +287,27 @@ body {
 }
 
 input[type='range'] {
-  accent-color: var(--color-accent);
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 99px;
+  background: oklch(0.84 0.02 262);
+  outline: none;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-cobalt-600);
+  border: 2px solid #fff;
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+input[type='range']::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
 }

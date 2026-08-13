@@ -10,9 +10,8 @@ files:
   - out/**/*
   - package.json
 
-extraResources:
-  - from: resources
-    to: resources
+# Sin extraResources: las recetas se derivan de los modelos instalados,
+# no hay JSON que empaquetar.
 
 # Sin firma de codigo: Windows mostrara SmartScreen la primera vez.
 # Es esperable en apps propias sin certificado (cuesta ~300 USD/anio).

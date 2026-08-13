@@ -6,10 +6,18 @@ import { conversationsRepo, messagesRepo } from '../db/repositories'
 import { comfyProcess } from '../comfy/process'
 import { comfyClient } from '../comfy/client'
 import { generator } from '../comfy/generator'
-import { loadPresets } from '../comfy/presets'
+import { listRecipes } from '../comfy/recipes'
+import {
+  deleteModel,
+  importModelFile,
+  listModels,
+  scanModels,
+  updateModel
+} from '../models/manager'
+import { downloader } from '../models/download'
 import { detectComfy, getSettings, isComfyFolder, updateSettings } from '../settings'
 import { updater } from '../updater'
-import type { AppSettings, SubmitInput } from '@shared/types'
+import type { AppSettings, ImportResult, SubmitInput } from '@shared/types'
 
 // ------------------------------------------------------- validacion basica
 // Todo lo que llega del renderer se trata como no confiable, aunque sea
@@ -58,12 +66,15 @@ function asSubmitInput(v: unknown): SubmitInput {
       samplerName: asString(params.samplerName ?? 'euler', 'samplerName', 64),
       scheduler: asString(params.scheduler ?? 'normal', 'scheduler', 64),
       randomSeed: Boolean(params.randomSeed),
+      hiresSteps:
+        params.hiresSteps === undefined ? undefined : num('hiresSteps', 1, 80, 16),
       loras: Array.isArray(params.loras)
-        ? params.loras.map((l) => {
+        ? params.loras.slice(0, 10).map((l) => {
             const lo = l as Record<string, unknown>
             const strength = Number(lo.strength)
             return {
-              node: asId(lo.node, 'lora.node'),
+              modelId: asString(lo.modelId ?? '', 'lora.modelId', 200),
+              filename: asString(lo.filename ?? '', 'lora.filename', 400),
               label: asString(lo.label ?? '', 'lora.label', 200),
               strength: Number.isFinite(strength) ? Math.min(2, Math.max(0, strength)) : 0,
               enabled: Boolean(lo.enabled),
@@ -124,8 +135,58 @@ export function registerIpc(getWindow: () => BrowserWindow | null): void {
     send(EV.comfyStatus, status)
   })
 
-  // --- presets
-  ipcMain.handle(CH.presetsList, () => loadPresets())
+  // --- recetas (derivadas del catalogo de modelos)
+  ipcMain.handle(CH.recipesList, () => listRecipes())
+
+  // --- modelos
+  ipcMain.handle(CH.modelsList, () => listModels())
+  ipcMain.handle(CH.modelsScan, () => scanModels())
+
+  ipcMain.handle(CH.modelsImportPaths, async (_e, paths: unknown) => {
+    if (!Array.isArray(paths)) throw new Error('Se esperaba una lista de rutas')
+    const results: ImportResult[] = []
+    for (const p of paths.slice(0, 20)) {
+      results.push(await importModelFile(asString(p, 'ruta', 1000)))
+    }
+    return results
+  })
+
+  ipcMain.handle(CH.modelsPickAndImport, async () => {
+    const win = getWindow()
+    if (!win) return []
+
+    const picked = await dialog.showOpenDialog(win, {
+      title: 'Elegi los modelos a importar',
+      properties: ['openFile', 'multiSelections'],
+      filters: [{ name: 'Modelos', extensions: ['safetensors', 'ckpt', 'pt', 'pth', 'gguf', 'sft'] }]
+    })
+    if (picked.canceled) return []
+
+    const results: ImportResult[] = []
+    for (const p of picked.filePaths) results.push(await importModelFile(p))
+    return results
+  })
+
+  ipcMain.handle(CH.modelsRemove, (_e, id: unknown) => deleteModel(asId(id, 'id')))
+
+  ipcMain.handle(CH.modelsUpdate, (_e, id: unknown, patch: unknown) => {
+    if (typeof patch !== 'object' || patch === null) throw new Error('Cambios invalidos')
+    const p = patch as { triggerWords?: unknown; notes?: unknown }
+    return updateModel(asId(id, 'id'), {
+      triggerWords: Array.isArray(p.triggerWords)
+        ? p.triggerWords.map((w) => asString(w, 'trigger', 100)).filter(Boolean).slice(0, 12)
+        : undefined,
+      notes: p.notes === undefined ? undefined : asString(p.notes, 'notes', 2000)
+    })
+  })
+
+  ipcMain.handle(CH.modelsDownload, (_e, url: unknown) =>
+    downloader.start(asString(url, 'url', 2000))
+  )
+  ipcMain.handle(CH.modelsCancelDownload, (_e, id: unknown) => downloader.cancel(asId(id, 'id')))
+  ipcMain.handle(CH.modelsDownloads, () => downloader.list())
+
+  downloader.on('job', (job) => send(EV.modelDownload, job))
 
   // --- conversaciones
   ipcMain.handle(CH.convList, () => conversationsRepo.list())

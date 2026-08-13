@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '../store/useStore'
+import { Icon } from './ui/icon'
+import { Button } from './ui/button'
+import { Section, Switch, TextField } from './ui/field'
 
 export default function SettingsDialog({ onClose }: { onClose: () => void }): React.JSX.Element {
   const settings = useStore((s) => s.settings)
@@ -14,9 +17,6 @@ export default function SettingsDialog({ onClose }: { onClose: () => void }): Re
   }, [])
 
   if (!draft) return <></>
-
-  // A partir de aca draft ya no es null; el alias lo hace explicito para
-  // TypeScript dentro de los callbacks.
   const current = draft
 
   async function save(): Promise<void> {
@@ -35,114 +35,108 @@ export default function SettingsDialog({ onClose }: { onClose: () => void }): Re
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6">
-      <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl border border-border bg-surface p-6">
-        <h2 className="text-lg font-semibold">Ajustes</h2>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-ink-900/25 p-6 backdrop-blur-sm">
+      <div className="glass-strong scroll max-h-[86vh] w-full max-w-lg animate-pop-in rounded-panel p-6 shadow-deep">
+        <h2 className="mb-5 text-[19px] font-extrabold tracking-tight text-ink-900">Ajustes</h2>
 
-        <Field label="Carpeta de ComfyUI">
-          <div className="flex gap-2">
+        <Section title="ComfyUI">
+          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-ink-500">
+            Carpeta
+          </label>
+          <div className="mb-4 flex gap-2">
             <input
-              value={draft.comfyPath}
+              value={current.comfyPath}
               onChange={(e) => setDraft({ ...current, comfyPath: e.target.value })}
-              className="min-w-0 flex-1 rounded-lg border border-border bg-surface-2 px-2.5 py-1.5 text-sm outline-none focus:border-accent"
+              className="min-w-0 flex-1 rounded-chip border border-line/70 bg-white/80 px-3 py-2 text-[13px] outline-none focus:border-halo/50 focus:ring-4 focus:ring-halo/14"
             />
-            <button
-              onClick={() => void browse()}
-              className="shrink-0 rounded-lg border border-border px-3 text-sm hover:bg-surface-2"
-            >
+            <Button size="sm" variant="secondary" icon="folder_open" onClick={() => void browse()}>
               Buscar
-            </button>
+            </Button>
           </div>
-        </Field>
 
-        <Field label="Ejecutable de Python">
-          <input
-            value={draft.pythonPath}
+          <TextField
+            label="Ejecutable de Python"
+            value={current.pythonPath}
             onChange={(e) => setDraft({ ...current, pythonPath: e.target.value })}
-            className="w-full rounded-lg border border-border bg-surface-2 px-2.5 py-1.5 text-sm outline-none focus:border-accent"
           />
-        </Field>
 
-        <Field label="Argumentos de arranque">
-          <input
-            value={draft.launchArgs}
+          <TextField
+            label="Argumentos de arranque"
+            className="font-mono text-[12px]"
+            value={current.launchArgs}
             onChange={(e) => setDraft({ ...current, launchArgs: e.target.value })}
-            className="w-full rounded-lg border border-border bg-surface-2 px-2.5 py-1.5 font-mono text-xs outline-none focus:border-accent"
+            hint="--disable-pinned-memory hace falta mientras el archivo de paginacion de Windows siga desactivado."
           />
-          <p className="mt-1 text-[11px] leading-snug text-muted">
-            <code>--disable-pinned-memory</code> hace falta en este equipo mientras el archivo de
-            paginacion de Windows siga desactivado.
-          </p>
-        </Field>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Host">
-            <input
-              value={draft.comfyHost}
+          <div className="grid grid-cols-2 gap-3">
+            <TextField
+              label="Host"
+              value={current.comfyHost}
               onChange={(e) => setDraft({ ...current, comfyHost: e.target.value })}
-              className="w-full rounded-lg border border-border bg-surface-2 px-2.5 py-1.5 text-sm outline-none focus:border-accent"
             />
-          </Field>
-          <Field label="Puerto">
-            <input
+            <TextField
+              label="Puerto"
               type="number"
-              value={draft.comfyPort}
+              value={current.comfyPort}
               onChange={(e) => setDraft({ ...current, comfyPort: Number(e.target.value) })}
-              className="w-full rounded-lg border border-border bg-surface-2 px-2.5 py-1.5 text-sm outline-none focus:border-accent"
             />
-          </Field>
-        </div>
+          </div>
 
-        <label className="mt-2 flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={draft.autoStartComfy}
-            onChange={(e) => setDraft({ ...current, autoStartComfy: e.target.checked })}
+          <Switch
+            label="Arrancar ComfyUI al abrir GenI"
+            checked={current.autoStartComfy}
+            onChange={(autoStartComfy) => setDraft({ ...current, autoStartComfy })}
           />
-          Arrancar ComfyUI al abrir GenI
-        </label>
+        </Section>
 
-        {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+        <Section title="Tokens de descarga">
+          <p className="mb-3 -mt-1 text-[11px] leading-snug text-ink-500">
+            Solo hacen falta para bajar modelos con licencia restringida. Se guardan en tu equipo,
+            en la base local de la app.
+          </p>
+          <TextField
+            label="Civitai"
+            type="password"
+            placeholder="Sin token"
+            value={current.civitaiToken}
+            onChange={(e) => setDraft({ ...current, civitaiToken: e.target.value })}
+          />
+          <TextField
+            label="Hugging Face"
+            type="password"
+            placeholder="Sin token"
+            value={current.huggingFaceToken}
+            onChange={(e) => setDraft({ ...current, huggingFaceToken: e.target.value })}
+          />
+        </Section>
 
-        <div className="mt-6 flex items-center justify-between">
-          <span className="text-[11px] text-muted">GenI {version}</span>
+        {error && (
+          <p className="mb-3 flex items-start gap-1.5 text-[12px] font-semibold text-rose-text">
+            <Icon name="error" filled className="mt-px text-[15px]" />
+            {error}
+          </p>
+        )}
+
+        <div className="flex items-center justify-between border-t border-line/40 pt-4">
+          <span className="text-[11px] font-semibold text-ink-400">GenI {version}</span>
           <div className="flex gap-2">
-            <button
+            <Button
+              size="sm"
+              variant="ghost"
+              icon="system_update"
               onClick={() => void window.geni.updates.check()}
-              className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-surface-2"
             >
-              Buscar actualizaciones
-            </button>
-            <button
-              onClick={onClose}
-              className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-surface-2"
-            >
+              Buscar updates
+            </Button>
+            <Button size="sm" variant="outline" onClick={onClose}>
               Cancelar
-            </button>
-            <button
-              onClick={() => void save()}
-              className="rounded-lg bg-accent px-4 py-1.5 text-sm font-medium text-white"
-            >
+            </Button>
+            <Button size="sm" onClick={() => void save()}>
               Guardar
-            </button>
+            </Button>
           </div>
         </div>
       </div>
-    </div>
-  )
-}
-
-function Field({
-  label,
-  children
-}: {
-  label: string
-  children: React.ReactNode
-}): React.JSX.Element {
-  return (
-    <div className="mt-4">
-      <label className="mb-1 block text-xs font-medium text-muted">{label}</label>
-      {children}
     </div>
   )
 }

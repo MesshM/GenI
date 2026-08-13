@@ -3,42 +3,55 @@ import type {
   AppSettings,
   ComfyStatus,
   Conversation,
+  DownloadJob,
   GenerationParams,
   GenerationProgress,
+  LoraSetting,
   Message,
-  Preset,
+  ModelAsset,
+  Recipe,
   UpdateInfo
 } from '@shared/types'
 
+export type View = 'chat' | 'models'
+
 interface State {
   ready: boolean
+  view: View
   settings: AppSettings | null
   comfy: ComfyStatus
   update: UpdateInfo | null
 
-  presets: Preset[]
+  recipes: Recipe[]
+  models: ModelAsset[]
+  downloads: DownloadJob[]
+
   conversations: Conversation[]
   activeId: string | null
   messages: Message[]
-
-  /** Progreso en vivo, indexado por id de mensaje. */
   progress: Record<string, GenerationProgress>
 
   prompt: string
   negative: string
   params: GenerationParams | null
-  presetId: string | null
+  recipeId: string | null
 
+  setView: (v: View) => void
   bootstrap: () => Promise<void>
+  refreshModels: () => Promise<void>
+
   selectConversation: (id: string) => Promise<void>
-  newConversation: (presetId?: string) => Promise<void>
+  newConversation: (recipeId?: string) => Promise<void>
   removeConversation: (id: string) => Promise<void>
   renameConversation: (id: string, title: string) => Promise<void>
 
-  choosePreset: (presetId: string) => void
+  chooseRecipe: (recipeId: string) => void
   setPrompt: (v: string) => void
   setNegative: (v: string) => void
   patchParams: (patch: Partial<GenerationParams>) => void
+  addLora: (modelId: string) => void
+  removeLora: (modelId: string) => void
+  patchLora: (modelId: string, patch: Partial<LoraSetting>) => void
   loadParamsFrom: (message: Message) => void
 
   send: () => Promise<void>
@@ -48,11 +61,15 @@ interface State {
 
 export const useStore = create<State>((set, get) => ({
   ready: false,
+  view: 'chat',
   settings: null,
   comfy: { state: 'stopped' },
   update: null,
 
-  presets: [],
+  recipes: [],
+  models: [],
+  downloads: [],
+
   conversations: [],
   activeId: null,
   messages: [],
@@ -61,31 +78,51 @@ export const useStore = create<State>((set, get) => ({
   prompt: '',
   negative: '',
   params: null,
-  presetId: null,
+  recipeId: null,
+
+  setView: (view) => set({ view }),
 
   async bootstrap() {
-    const [settings, presets, conversations, comfy] = await Promise.all([
-      window.geni.settings.get(),
-      window.geni.presets.list(),
+    const settings = await window.geni.settings.get()
+
+    // Sin ruta de ComfyUI no hay carpetas que escanear todavia.
+    if (settings.comfyPath) await window.geni.models.scan()
+
+    const [recipes, models, conversations, comfy, downloads] = await Promise.all([
+      window.geni.recipes.list(),
+      window.geni.models.list(),
       window.geni.conversations.list(),
-      window.geni.comfy.status()
+      window.geni.comfy.status(),
+      window.geni.models.downloads()
     ])
 
-    const presetId = presets[0]?.id ?? null
+    const first = recipes[0] ?? null
     set({
       settings,
-      presets,
+      recipes,
+      models,
       conversations,
       comfy,
-      presetId,
-      params: presets[0] ? structuredClone(presets[0].defaults) : null,
-      negative: '',
+      downloads,
+      recipeId: first?.id ?? null,
+      params: first ? structuredClone(first.defaults) : null,
+      negative: first?.negativeDefault ?? '',
       ready: true
     })
 
-    // Eventos que empuja el proceso principal.
     window.geni.comfy.onStatus((s) => set({ comfy: s }))
     window.geni.updates.onState((u) => set({ update: u }))
+
+    window.geni.models.onDownload((job) => {
+      set((state) => {
+        const downloads = state.downloads.some((d) => d.id === job.id)
+          ? state.downloads.map((d) => (d.id === job.id ? job : d))
+          : [...state.downloads, job]
+        return { downloads }
+      })
+      // Al terminar, el catalogo y las recetas cambian.
+      if (job.state === 'done') void get().refreshModels()
+    })
 
     window.geni.generate.onProgress((p) => {
       set((state) => ({ progress: { ...state.progress, [p.messageId]: p } }))
@@ -99,10 +136,8 @@ export const useStore = create<State>((set, get) => ({
             ? [...state.messages, m]
             : state.messages
 
-        // Cuando termina, el progreso ya no aplica.
         const progress = { ...state.progress }
         if (m.status !== 'running' && m.status !== 'pending') delete progress[m.id]
-
         return { messages, progress }
       })
       void window.geni.conversations.list().then((conversations) => set({ conversations }))
@@ -111,33 +146,51 @@ export const useStore = create<State>((set, get) => ({
     if (conversations[0]) await get().selectConversation(conversations[0].id)
   },
 
+  async refreshModels() {
+    const [models, recipes] = await Promise.all([
+      window.geni.models.list(),
+      window.geni.recipes.list()
+    ])
+    set((state) => ({
+      models,
+      recipes,
+      // Si la receta activa desaparecio (borraron su modelo), cae a la primera.
+      recipeId: recipes.some((r) => r.id === state.recipeId)
+        ? state.recipeId
+        : (recipes[0]?.id ?? null)
+    }))
+  },
+
   async selectConversation(id) {
     const messages = await window.geni.conversations.messages(id)
     const conversation = get().conversations.find((c) => c.id === id)
-    const preset = get().presets.find((p) => p.id === conversation?.presetId)
+    const recipe = get().recipes.find((r) => r.id === conversation?.presetId)
 
     set({
       activeId: id,
       messages,
-      presetId: conversation?.presetId ?? get().presetId,
-      params: preset ? structuredClone(preset.defaults) : get().params
+      recipeId: recipe?.id ?? get().recipeId,
+      params: recipe ? structuredClone(recipe.defaults) : get().params,
+      negative: recipe?.negativeDefault ?? get().negative
     })
   },
 
-  async newConversation(presetId) {
-    const id = presetId ?? get().presetId ?? get().presets[0]?.id
+  async newConversation(recipeId) {
+    const id = recipeId ?? get().recipeId ?? get().recipes[0]?.id
     if (!id) return
 
     const conversation = await window.geni.conversations.create(id)
-    const preset = get().presets.find((p) => p.id === id)
+    const recipe = get().recipes.find((r) => r.id === id)
 
     set((state) => ({
       conversations: [conversation, ...state.conversations],
       activeId: conversation.id,
       messages: [],
-      presetId: id,
-      params: preset ? structuredClone(preset.defaults) : state.params,
-      prompt: ''
+      recipeId: id,
+      params: recipe ? structuredClone(recipe.defaults) : state.params,
+      negative: recipe?.negativeDefault ?? state.negative,
+      prompt: '',
+      view: 'chat'
     }))
   },
 
@@ -157,10 +210,14 @@ export const useStore = create<State>((set, get) => ({
     }))
   },
 
-  choosePreset(presetId) {
-    const preset = get().presets.find((p) => p.id === presetId)
-    if (!preset) return
-    set({ presetId, params: structuredClone(preset.defaults) })
+  chooseRecipe(recipeId) {
+    const recipe = get().recipes.find((r) => r.id === recipeId)
+    if (!recipe) return
+    set({
+      recipeId,
+      params: structuredClone(recipe.defaults),
+      negative: recipe.negativeDefault
+    })
   },
 
   setPrompt: (v) => set({ prompt: v }),
@@ -170,29 +227,64 @@ export const useStore = create<State>((set, get) => ({
     set((state) => (state.params ? { params: { ...state.params, ...patch } } : {}))
   },
 
+  addLora(modelId) {
+    const model = get().models.find((m) => m.id === modelId)
+    const params = get().params
+    if (!model || !params) return
+    if (params.loras.some((l) => l.modelId === modelId)) return
+
+    const lora: LoraSetting = {
+      modelId,
+      filename: model.filename,
+      label: model.filename.replace(/\.[^.]+$/, ''),
+      strength: 0.8,
+      enabled: true,
+      trigger: model.triggerWords[0]
+    }
+    set({ params: { ...params, loras: [...params.loras, lora] } })
+  },
+
+  removeLora(modelId) {
+    const params = get().params
+    if (!params) return
+    set({ params: { ...params, loras: params.loras.filter((l) => l.modelId !== modelId) } })
+  },
+
+  patchLora(modelId, patch) {
+    const params = get().params
+    if (!params) return
+    set({
+      params: {
+        ...params,
+        loras: params.loras.map((l) => (l.modelId === modelId ? { ...l, ...patch } : l))
+      }
+    })
+  },
+
   loadParamsFrom(message) {
     set({
       params: structuredClone(message.params),
       prompt: message.prompt,
       negative: message.negative,
-      presetId: message.presetId
+      recipeId: message.presetId,
+      view: 'chat'
     })
   },
 
   async send() {
-    const { activeId, presetId, params, prompt, negative } = get()
-    if (!presetId || !params || !prompt.trim()) return
+    const { activeId, recipeId, params, prompt, negative } = get()
+    if (!recipeId || !params || !prompt.trim()) return
 
     let conversationId = activeId
     if (!conversationId) {
-      await get().newConversation(presetId)
+      await get().newConversation(recipeId)
       conversationId = get().activeId
     }
     if (!conversationId) return
 
     const message = await window.geni.generate.submit({
       conversationId,
-      presetId,
+      presetId: recipeId,
       prompt,
       negative,
       params

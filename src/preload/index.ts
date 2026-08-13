@@ -1,13 +1,16 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { CH, EV } from '@shared/channels'
 import type {
   AppSettings,
   ComfyStatus,
   Conversation,
+  DownloadJob,
   GenIApi,
   GenerationProgress,
+  ImportResult,
   Message,
-  Preset,
+  ModelAsset,
+  Recipe,
   SubmitInput,
   UpdateInfo
 } from '@shared/types'
@@ -39,8 +42,24 @@ const api: GenIApi = {
     stop: () => ipcRenderer.invoke(CH.comfyStop) as Promise<void>,
     onStatus: (cb) => subscribe<ComfyStatus>(EV.comfyStatus, cb)
   },
-  presets: {
-    list: () => ipcRenderer.invoke(CH.presetsList) as Promise<Preset[]>
+  recipes: {
+    list: () => ipcRenderer.invoke(CH.recipesList) as Promise<Recipe[]>
+  },
+  models: {
+    list: () => ipcRenderer.invoke(CH.modelsList) as Promise<ModelAsset[]>,
+    scan: () =>
+      ipcRenderer.invoke(CH.modelsScan) as Promise<{ found: number; removed: number }>,
+    importPaths: (paths) =>
+      ipcRenderer.invoke(CH.modelsImportPaths, paths) as Promise<ImportResult[]>,
+    pathForFile: (file) => webUtils.getPathForFile(file),
+    pickAndImport: () => ipcRenderer.invoke(CH.modelsPickAndImport) as Promise<ImportResult[]>,
+    remove: (id) => ipcRenderer.invoke(CH.modelsRemove, id) as Promise<void>,
+    update: (id, patch) =>
+      ipcRenderer.invoke(CH.modelsUpdate, id, patch) as Promise<ModelAsset | null>,
+    download: (url) => ipcRenderer.invoke(CH.modelsDownload, url) as Promise<DownloadJob>,
+    cancelDownload: (id) => ipcRenderer.invoke(CH.modelsCancelDownload, id) as Promise<void>,
+    downloads: () => ipcRenderer.invoke(CH.modelsDownloads) as Promise<DownloadJob[]>,
+    onDownload: (cb) => subscribe<DownloadJob>(EV.modelDownload, cb)
   },
   conversations: {
     list: () => ipcRenderer.invoke(CH.convList) as Promise<Conversation[]>,

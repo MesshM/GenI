@@ -60,5 +60,29 @@ export const MIGRATIONS: Migration[] = [
         CREATE INDEX idx_conversations_updated ON conversations(updated_at DESC);
       `)
     }
+  },
+  {
+    version: 2,
+    up(db) {
+      // Catalogo de modelos instalados. El archivo manda: esta tabla es un
+      // indice sobre las carpetas de ComfyUI, y se resincroniza al escanear.
+      db.exec(`
+        CREATE TABLE models (
+          id             TEXT PRIMARY KEY,
+          kind           TEXT NOT NULL,
+          architecture   TEXT NOT NULL DEFAULT 'unknown',
+          filename       TEXT NOT NULL,
+          abs_path       TEXT NOT NULL UNIQUE,
+          size_bytes     INTEGER NOT NULL DEFAULT 0,
+          trigger_words  TEXT NOT NULL DEFAULT '[]',
+          source         TEXT NOT NULL DEFAULT 'scan',
+          source_url     TEXT,
+          notes          TEXT NOT NULL DEFAULT '',
+          created_at     INTEGER NOT NULL
+        );
+
+        CREATE INDEX idx_models_kind ON models(kind, filename);
+      `)
+    }
   }
 ]

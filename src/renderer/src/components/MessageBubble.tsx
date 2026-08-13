@@ -1,4 +1,6 @@
 import { useStore, imageUrl } from '../store/useStore'
+import { Icon } from './ui/icon'
+import { cn } from '@/lib/utils'
 import type { GenerationProgress, Message } from '@shared/types'
 
 interface Props {
@@ -15,40 +17,52 @@ export default function MessageBubble({ message, progress }: Props): React.JSX.E
   const running = message.status === 'running' || message.status === 'pending'
   const pct = progress && progress.max > 0 ? Math.round((progress.value / progress.max) * 100) : 0
 
-  /** Repite la misma generacion con otra semilla. */
   function reroll(): void {
     loadParamsFrom(message)
     patchParams({ randomSeed: true })
     setTimeout(() => void send(), 0)
   }
 
-  return (
-    <article className="mb-6 rounded-xl border border-border bg-surface p-4">
-      <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.prompt}</p>
+  const activeLoras = message.params.loras.filter((l) => l.enabled)
 
-      <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-muted">
-        <Chip>{message.params.width}×{message.params.height}</Chip>
-        <Chip>{message.params.steps} pasos</Chip>
-        <Chip>CFG {message.params.cfg}</Chip>
-        <Chip>{message.params.samplerName}</Chip>
-        <Chip>seed {message.params.seed}</Chip>
+  return (
+    <article className="mb-4 animate-fade-up rounded-panel border border-white/75 bg-white/60 p-4 shadow-soft backdrop-blur">
+      <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-ink-800">
+        {message.prompt}
+      </p>
+
+      <div className="mt-2.5 flex flex-wrap gap-1.5">
+        <Chip icon="aspect_ratio">
+          {message.params.width}×{message.params.height}
+        </Chip>
+        <Chip icon="stairs">{message.params.steps} pasos</Chip>
+        <Chip icon="tune">CFG {message.params.cfg}</Chip>
+        <Chip icon="casino">{message.params.seed}</Chip>
+        {activeLoras.map((l) => (
+          <Chip key={l.modelId} icon="layers">
+            {l.label} {l.strength}
+          </Chip>
+        ))}
       </div>
 
       {running && (
         <div className="mt-4">
-          <div className="mb-1 flex justify-between text-[11px] text-muted">
+          <div className="mb-1.5 flex justify-between text-[11px] font-bold text-ink-500">
             <span>{progress?.currentNode || 'En cola...'}</span>
             <span>{pct > 0 ? `${pct}%` : ''}</span>
           </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
+          <div className="h-1.5 overflow-hidden rounded-full bg-fog/35">
             <div
-              className="h-full bg-accent transition-all duration-200"
-              style={{ width: `${pct}%` }}
+              className={cn(
+                'h-full bg-cta transition-all duration-200',
+                pct === 0 && 'w-1/4 animate-pulse'
+              )}
+              style={pct > 0 ? { width: `${pct}%` } : undefined}
             />
           </div>
           <button
             onClick={() => void cancel(message.id)}
-            className="mt-2 text-[11px] text-muted underline hover:text-text"
+            className="mt-2 text-[11px] font-semibold text-ink-400 underline hover:text-rose"
           >
             Cancelar
           </button>
@@ -56,33 +70,38 @@ export default function MessageBubble({ message, progress }: Props): React.JSX.E
       )}
 
       {message.status === 'error' && (
-        <p className="mt-3 rounded-lg border border-danger/40 bg-danger/10 p-2.5 text-xs text-danger">
+        <p className="mt-3 flex items-start gap-2 rounded-box border border-rose/25 bg-rose-bg/60 p-2.5 text-[12px] leading-snug text-rose-text">
+          <Icon name="error" filled className="mt-px shrink-0 text-[16px]" />
           {message.error}
         </p>
       )}
 
       {message.status === 'cancelled' && (
-        <p className="mt-3 text-xs text-muted">Cancelado.</p>
+        <p className="mt-3 text-[12px] font-semibold text-ink-400">Cancelado.</p>
       )}
 
       {message.generations.length > 0 && (
-        <div className="mt-4 grid grid-cols-2 gap-3">
+        <div
+          className={cn(
+            'mt-4 grid gap-2.5',
+            message.generations.length === 1 ? 'grid-cols-1' : 'grid-cols-2'
+          )}
+        >
           {message.generations.map((g) => (
-            <figure key={g.id} className="group relative overflow-hidden rounded-lg bg-surface-2">
+            <figure
+              key={g.id}
+              className="group/img relative overflow-hidden rounded-box bg-white/50 shadow-soft"
+            >
               <img
                 src={imageUrl(g.absPath)}
                 alt={message.prompt.slice(0, 80)}
                 loading="lazy"
                 className="w-full object-contain"
               />
-              <figcaption className="absolute inset-x-0 bottom-0 flex gap-1 bg-black/70 p-1.5 opacity-0 transition-opacity group-hover:opacity-100">
-                <SmallBtn onClick={() => void window.geni.images.copy(g.absPath)}>Copiar</SmallBtn>
-                <SmallBtn onClick={() => void window.geni.images.saveAs(g.absPath)}>
-                  Guardar
-                </SmallBtn>
-                <SmallBtn onClick={() => void window.geni.images.reveal(g.absPath)}>
-                  Carpeta
-                </SmallBtn>
+              <figcaption className="absolute inset-x-0 bottom-0 flex gap-1 bg-gradient-to-t from-ink-900/75 to-transparent p-2 opacity-0 transition-opacity group-hover/img:opacity-100">
+                <ImgBtn icon="content_copy" label="Copiar" onClick={() => void window.geni.images.copy(g.absPath)} />
+                <ImgBtn icon="download" label="Guardar" onClick={() => void window.geni.images.saveAs(g.absPath)} />
+                <ImgBtn icon="folder_open" label="Carpeta" onClick={() => void window.geni.images.reveal(g.absPath)} />
               </figcaption>
             </figure>
           ))}
@@ -90,39 +109,65 @@ export default function MessageBubble({ message, progress }: Props): React.JSX.E
       )}
 
       {!running && (
-        <div className="mt-3 flex gap-3 text-[11px]">
-          <button onClick={reroll} className="text-muted underline hover:text-text">
-            Repetir con otra semilla
-          </button>
-          <button
-            onClick={() => loadParamsFrom(message)}
-            className="text-muted underline hover:text-text"
-          >
+        <div className="mt-3 flex gap-3">
+          <Action icon="refresh" onClick={reroll}>
+            Otra semilla
+          </Action>
+          <Action icon="edit" onClick={() => loadParamsFrom(message)}>
             Editar parametros
-          </button>
+          </Action>
         </div>
       )}
     </article>
   )
 }
 
-function Chip({ children }: { children: React.ReactNode }): React.JSX.Element {
-  return <span className="rounded bg-surface-2 px-1.5 py-0.5">{children}</span>
+function Chip({ icon, children }: { icon: string; children: React.ReactNode }): React.JSX.Element {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-line/50 bg-white/60 px-2 py-0.5 text-[11px] font-bold text-ink-500">
+      <Icon name={icon} className="text-[13px]" />
+      {children}
+    </span>
+  )
 }
 
-function SmallBtn({
+function Action({
+  icon,
   onClick,
   children
 }: {
+  icon: string
   onClick: () => void
   children: React.ReactNode
 }): React.JSX.Element {
   return (
     <button
       onClick={onClick}
-      className="rounded bg-white/10 px-2 py-1 text-[11px] hover:bg-white/20"
+      className="inline-flex items-center gap-1 text-[11px] font-bold text-ink-500 transition-colors hover:text-cobalt-600"
     >
+      <Icon name={icon} className="text-[14px]" />
       {children}
+    </button>
+  )
+}
+
+function ImgBtn({
+  icon,
+  label,
+  onClick
+}: {
+  icon: string
+  label: string
+  onClick: () => void
+}): React.JSX.Element {
+  return (
+    <button
+      onClick={onClick}
+      title={label}
+      className="inline-flex items-center gap-1 rounded-chip bg-white/25 px-2 py-1 text-[11px] font-bold text-white backdrop-blur transition-colors hover:bg-white/40"
+    >
+      <Icon name={icon} className="text-[14px]" />
+      {label}
     </button>
   )
 }

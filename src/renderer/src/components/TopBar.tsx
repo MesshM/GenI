@@ -1,102 +1,98 @@
 import { useState } from 'react'
 import { useStore } from '../store/useStore'
-import SettingsDialog from './SettingsDialog'
+import { Icon } from './ui/icon'
+import { Button } from './ui/button'
+import { cn } from '@/lib/utils'
 
 export default function TopBar(): React.JSX.Element {
   const comfy = useStore((s) => s.comfy)
   const update = useStore((s) => s.update)
-  const [showSettings, setShowSettings] = useState(false)
   const [showLog, setShowLog] = useState(false)
+
+  const hasLog = comfy.state === 'starting' || comfy.state === 'error'
 
   const dot =
     comfy.state === 'ready'
-      ? 'bg-ok'
+      ? 'bg-green'
       : comfy.state === 'starting'
-        ? 'bg-yellow-400 animate-pulse'
+        ? 'bg-amber animate-pulse'
         : comfy.state === 'error'
-          ? 'bg-danger'
-          : 'bg-muted'
+          ? 'bg-rose'
+          : 'bg-ink-300'
 
   const label =
     comfy.state === 'ready'
-      ? `${comfy.device} · ${(comfy.vramTotalMb / 1024).toFixed(0)} GB`
+      ? `${comfy.device.replace(/^cuda:\d+\s*/, '')} · ${(comfy.vramTotalMb / 1024).toFixed(0)} GB`
       : comfy.state === 'starting'
-        ? 'Arrancando ComfyUI...'
+        ? 'Arrancando ComfyUI'
         : comfy.state === 'error'
           ? 'ComfyUI con problemas'
           : 'ComfyUI detenido'
 
-  const hasLog = comfy.state === 'starting' || comfy.state === 'error'
-
   return (
     <>
-      <header className="drag-region flex h-11 shrink-0 items-center gap-3 border-b border-border bg-surface px-4">
-        <span className="font-semibold tracking-tight">GenI</span>
-
+      <header className="drag-region flex h-14 shrink-0 items-center gap-3 px-6">
         <button
           onClick={() => hasLog && setShowLog((v) => !v)}
-          className={`no-drag flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs ${
-            hasLog ? 'hover:bg-surface-2' : 'cursor-default'
-          }`}
-          title={comfy.state === 'error' ? comfy.message : undefined}
+          className={cn(
+            'no-drag flex items-center gap-2 rounded-full border border-white/70 bg-white/60 px-3.5 py-1.5 text-[12px] font-bold text-ink-700 shadow-soft backdrop-blur transition-colors',
+            hasLog && 'hover:bg-white'
+          )}
         >
-          <span className={`h-2 w-2 rounded-full ${dot}`} />
+          <span className={cn('h-2 w-2 rounded-full', dot)} />
           {label}
+          {hasLog && <Icon name="expand_more" className="text-[16px] text-ink-400" />}
         </button>
 
-        {comfy.state !== 'ready' && comfy.state !== 'starting' && (
-          <button
+        {(comfy.state === 'stopped' || comfy.state === 'error') && (
+          <Button
+            size="sm"
+            variant="secondary"
+            icon="play_arrow"
+            className="no-drag"
             onClick={() => void window.geni.comfy.start()}
-            className="no-drag rounded-lg border border-border px-3 py-1 text-xs hover:bg-surface-2"
           >
-            Arrancar ComfyUI
-          </button>
+            Arrancar
+          </Button>
         )}
 
         <div className="flex-1" />
 
         {update?.available && (
-          <div className="no-drag flex items-center gap-2 rounded-lg border border-accent-soft bg-accent-soft px-3 py-1 text-xs">
-            <span>Version {update.version} disponible</span>
+          <div className="no-drag flex items-center gap-2 rounded-full border border-white/70 bg-white/70 px-3 py-1.5 text-[12px] font-bold text-ink-700 shadow-soft backdrop-blur">
+            <Icon name="rocket_launch" className="text-[16px] text-cobalt-600" />
+            <span>Version {update.version}</span>
             {update.downloaded ? (
               <button
                 onClick={() => void window.geni.updates.install()}
-                className="rounded bg-accent px-2 py-0.5 text-white"
+                className="rounded-full bg-cta px-2.5 py-0.5 text-white shadow-blue"
               >
-                Reiniciar e instalar
+                Reiniciar
               </button>
             ) : update.downloading ? (
-              <span className="text-muted">{update.percent}%</span>
+              <span className="text-ink-500">{update.percent}%</span>
             ) : (
               <button
                 onClick={() => void window.geni.updates.download()}
-                className="rounded bg-accent px-2 py-0.5 text-white"
+                className="rounded-full bg-cta px-2.5 py-0.5 text-white shadow-blue"
               >
                 Descargar
               </button>
             )}
           </div>
         )}
-
-        <button
-          onClick={() => setShowSettings(true)}
-          className="no-drag rounded-lg border border-border px-3 py-1 text-xs hover:bg-surface-2"
-        >
-          Ajustes
-        </button>
       </header>
 
-      {/* El log solo aparece cuando hace falta: arrancando o tras un error. */}
       {showLog && hasLog && (
-        <div className="max-h-56 shrink-0 overflow-auto border-b border-border bg-black/40 px-4 py-2 font-mono text-[11px] leading-relaxed text-muted">
-          {comfy.state === 'error' && <p className="mb-1 text-danger">{comfy.message}</p>}
+        <div className="mx-6 mb-3 max-h-52 shrink-0 overflow-auto rounded-panel border border-white/70 bg-white/70 p-3 font-mono text-[11px] leading-relaxed text-ink-600 shadow-soft backdrop-blur">
+          {comfy.state === 'error' && (
+            <p className="mb-2 font-sans text-[12px] font-bold text-rose-text">{comfy.message}</p>
+          )}
           {comfy.log.map((line, i) => (
             <div key={i}>{line}</div>
           ))}
         </div>
       )}
-
-      {showSettings && <SettingsDialog onClose={() => setShowSettings(false)} />}
     </>
   )
 }

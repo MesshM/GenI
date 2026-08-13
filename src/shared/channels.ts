@@ -11,7 +11,17 @@ export const CH = {
   comfyStart: 'comfy:start',
   comfyStop: 'comfy:stop',
 
-  presetsList: 'presets:list',
+  recipesList: 'recipes:list',
+
+  modelsList: 'models:list',
+  modelsScan: 'models:scan',
+  modelsImportPaths: 'models:importPaths',
+  modelsPickAndImport: 'models:pickAndImport',
+  modelsRemove: 'models:remove',
+  modelsUpdate: 'models:update',
+  modelsDownload: 'models:download',
+  modelsCancelDownload: 'models:cancelDownload',
+  modelsDownloads: 'models:downloads',
 
   convList: 'conv:list',
   convCreate: 'conv:create',
@@ -38,7 +48,8 @@ export const EV = {
   comfyStatus: 'ev:comfyStatus',
   genProgress: 'ev:genProgress',
   genMessage: 'ev:genMessage',
-  updState: 'ev:updState'
+  updState: 'ev:updState',
+  modelDownload: 'ev:modelDownload'
 } as const
 
 export type InvokeChannel = (typeof CH)[keyof typeof CH]

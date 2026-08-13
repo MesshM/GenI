@@ -8,65 +8,98 @@ export interface ComfyNode {
 }
 export type ComfyWorkflow = Record<string, ComfyNode>
 
-/** Apunta a un input concreto de un nodo del workflow. */
-export interface NodeTarget {
-  node: string
-  input: string
+// ------------------------------------------------------------- modelos
+
+export type ModelKind =
+  | 'checkpoint'
+  | 'lora'
+  | 'vae'
+  | 'text_encoder'
+  | 'diffusion_model'
+  | 'controlnet'
+  | 'embedding'
+  | 'upscale_model'
+  | 'unknown'
+
+export type ModelArchitecture = 'sdxl' | 'sd15' | 'flux' | 'unknown'
+
+export interface ModelAsset {
+  id: string
+  kind: ModelKind
+  architecture: ModelArchitecture
+  /** Nombre del archivo tal como lo ve ComfyUI. */
+  filename: string
+  absPath: string
+  sizeBytes: number
+  /** Palabras que activan la LoRA. Editables por el usuario. */
+  triggerWords: string[]
+  source: 'scan' | 'import' | 'civitai' | 'huggingface'
+  sourceUrl: string | null
+  notes: string
+  createdAt: number
 }
+
+export interface ImportResult {
+  ok: boolean
+  filename: string
+  kind: ModelKind
+  architecture: ModelArchitecture
+  reason: string
+  error?: string
+}
+
+export interface DownloadJob {
+  id: string
+  url: string
+  filename: string
+  kind: ModelKind
+  receivedBytes: number
+  totalBytes: number
+  state: 'resolving' | 'downloading' | 'done' | 'error' | 'cancelled'
+  error: string | null
+}
+
+// ------------------------------------------------------------- recetas
+
+/** Cada arquitectura arma el grafo de forma distinta. */
+export type RecipeArchitecture = 'sdxl' | 'flux' | 'flux-kontext'
 
 /**
- * Que control de la interfaz escribe en que nodo.
- * Un parametro puede apuntar a varios nodos: la seed, por ejemplo, va a las
- * dos pasadas del hires fix para que ambas usen el mismo valor.
+ * Una receta es "que modelos usar y como conectarlos". La app genera el
+ * workflow a partir de esto, asi que agregar o quitar una LoRA no requiere
+ * tocar ningun JSON.
  */
-export interface ParamMap {
-  positive?: NodeTarget[]
-  negative?: NodeTarget[]
-  width?: NodeTarget[]
-  height?: NodeTarget[]
-  /** Resolucion de la pasada base, cuando el preset usa hires fix. */
-  baseWidth?: NodeTarget[]
-  baseHeight?: NodeTarget[]
-  seed?: NodeTarget[]
-  steps?: NodeTarget[]
-  cfg?: NodeTarget[]
-  samplerName?: NodeTarget[]
-  scheduler?: NodeTarget[]
-  denoise?: NodeTarget[]
-  batchSize?: NodeTarget[]
-  /** Imagen de entrada, solo en presets de edicion. */
-  inputImage?: NodeTarget[]
-  loras?: LoraSlot[]
-}
-
-export interface LoraSlot {
-  node: string
-  label: string
-  /** Palabra que hay que meter en el prompt para activarla, si tiene. */
-  trigger?: string
-}
-
-export type PresetKind = 'txt2img' | 'img2img'
-
-export interface Preset {
+export interface Recipe {
   id: string
   name: string
   description: string
-  kind: PresetKind
-  workflow: ComfyWorkflow
-  paramMap: ParamMap
+  architecture: RecipeArchitecture
+  /** SDXL: checkpoint todo en uno. */
+  checkpoint?: string
+  /** FLUX: modelo de difusion + codificadores + VAE por separado. */
+  unet?: string
+  clipL?: string
+  clipT5?: string
+  vae?: string
+  weightDtype?: 'default' | 'fp8_e4m3fn' | 'fp8_e4m3fn_fast' | 'fp8_e5m2'
+  /** Negativo para saltarse capas finales de CLIP (-2 es lo habitual en anime). */
+  clipSkip?: number
   defaults: GenerationParams
-  /** Resoluciones sugeridas en la interfaz. */
+  negativeDefault: string
   resolutions: { label: string; width: number; height: number }[]
   builtin: boolean
   sortOrder: number
 }
 
 export interface LoraSetting {
-  node: string
+  /** Id del modelo en el catalogo. */
+  modelId: string
+  /** Nombre del archivo tal como lo espera ComfyUI. */
+  filename: string
   label: string
   strength: number
   enabled: boolean
+  /** Palabra que se antepone al prompt cuando esta activa. */
   trigger?: string
 }
 
@@ -74,16 +107,19 @@ export interface GenerationParams {
   width: number
   height: number
   steps: number
+  /** Pasos de la segunda pasada; si falta se calcula desde `steps`. */
+  hiresSteps?: number
   cfg: number
   samplerName: string
   scheduler: string
   seed: number
-  /** Si es true se sortea una seed nueva en cada envio. */
   randomSeed: boolean
   batchSize: number
   denoise?: number
   loras: LoraSetting[]
 }
+
+// ------------------------------------------------------------ mensajes
 
 export type MessageStatus = 'pending' | 'running' | 'done' | 'error' | 'cancelled'
 export type MessageRole = 'user' | 'assistant'
@@ -121,7 +157,6 @@ export interface Conversation {
   presetId: string
   createdAt: number
   updatedAt: number
-  /** Primera imagen de la conversacion, para la miniatura de la lista. */
   thumbnail: string | null
   messageCount: number
 }
@@ -134,6 +169,9 @@ export interface AppSettings {
   comfyHost: string
   comfyPort: number
   theme: 'dark' | 'light'
+  /** Solo para descargar modelos con licencia restringida. */
+  civitaiToken: string
+  huggingFaceToken: string
 }
 
 export type ComfyStatus =
@@ -144,10 +182,8 @@ export type ComfyStatus =
 
 export interface GenerationProgress {
   messageId: string
-  /** Paso actual dentro del muestreador. */
   value: number
   max: number
-  /** Titulo legible del nodo que se esta ejecutando. */
   currentNode: string
 }
 
@@ -158,6 +194,15 @@ export interface UpdateInfo {
   downloaded: boolean
   percent: number
   error: string | null
+}
+
+export interface SubmitInput {
+  conversationId: string
+  presetId: string
+  prompt: string
+  negative: string
+  params: GenerationParams
+  inputImagePath?: string
 }
 
 /** Lo que el renderer puede pedir al proceso principal. */
@@ -174,8 +219,24 @@ export interface GenIApi {
     stop(): Promise<void>
     onStatus(cb: (s: ComfyStatus) => void): () => void
   }
-  presets: {
-    list(): Promise<Preset[]>
+  recipes: {
+    list(): Promise<Recipe[]>
+  }
+  models: {
+    list(): Promise<ModelAsset[]>
+    scan(): Promise<{ found: number; removed: number }>
+    /** Importa archivos arrastrados a la ventana. */
+    importPaths(paths: string[]): Promise<ImportResult[]>
+    /** Ruta real de un File soltado en la ventana (File.path ya no existe). */
+    pathForFile(file: File): string
+    /** Abre el dialogo del sistema para elegir archivos. */
+    pickAndImport(): Promise<ImportResult[]>
+    remove(id: string): Promise<void>
+    update(id: string, patch: { triggerWords?: string[]; notes?: string }): Promise<ModelAsset | null>
+    download(url: string): Promise<DownloadJob>
+    cancelDownload(id: string): Promise<void>
+    downloads(): Promise<DownloadJob[]>
+    onDownload(cb: (job: DownloadJob) => void): () => void
   }
   conversations: {
     list(): Promise<Conversation[]>
@@ -204,14 +265,4 @@ export interface GenIApi {
   app: {
     version(): Promise<string>
   }
-}
-
-export interface SubmitInput {
-  conversationId: string
-  presetId: string
-  prompt: string
-  negative: string
-  params: GenerationParams
-  /** Ruta absoluta de la imagen de entrada, solo para presets img2img. */
-  inputImagePath?: string
 }

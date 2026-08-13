@@ -3,25 +3,57 @@ import { join } from 'node:path'
 import { conversationsRepo, generationsRepo, messagesRepo } from '../db/repositories'
 import { getSettings } from '../settings'
 import { comfyClient, type ComfyImageRef } from './client'
-import { getPreset } from './presets'
-import { buildWorkflow, randomSeed } from './workflow'
-import type { GenerationProgress, Message, SubmitInput } from '@shared/types'
+import { getRecipe } from './recipes'
+import { buildWorkflow } from './builder'
+import type { ComfyWorkflow, GenerationProgress, Message, SubmitInput } from '@shared/types'
 
-/** Trabajos en vuelo, indexados por el prompt_id que devolvio ComfyUI. */
 interface InFlight {
   messageId: string
-  presetId: string
+  /** Titulo legible por id de nodo, para la barra de progreso. */
+  labels: Record<string, string>
 }
 
-/**
- * Une la base de datos con ComfyUI: crea el mensaje, arma y encola el workflow,
- * sigue el avance y guarda los resultados.
- */
+const NODE_LABELS: Record<string, string> = {
+  CheckpointLoaderSimple: 'Cargando modelo',
+  UNETLoader: 'Cargando modelo',
+  LoraLoader: 'Aplicando LoRA',
+  DualCLIPLoader: 'Cargando codificadores',
+  VAELoader: 'Cargando VAE',
+  CLIPSetLastLayer: 'Ajustando CLIP',
+  CLIPTextEncode: 'Procesando prompt',
+  FluxGuidance: 'Ajustando guia',
+  ConditioningZeroOut: 'Preparando negativo',
+  EmptyLatentImage: 'Preparando lienzo',
+  EmptySD3LatentImage: 'Preparando lienzo',
+  LoadImage: 'Leyendo imagen',
+  FluxKontextImageScale: 'Ajustando tamano',
+  VAEEncode: 'Codificando imagen',
+  ReferenceLatent: 'Anclando referencia',
+  KSampler: 'Generando',
+  LatentUpscale: 'Escalando',
+  VAEDecode: 'Decodificando',
+  SaveImage: 'Guardando'
+}
+
+function labelsFor(workflow: ComfyWorkflow): Record<string, string> {
+  const labels: Record<string, string> = {}
+  for (const [id, node] of Object.entries(workflow)) {
+    labels[id] = NODE_LABELS[node.class_type] ?? node.class_type
+  }
+  return labels
+}
+
+function randomSeed(): number {
+  return Math.floor(Math.random() * 2 ** 32)
+}
+
+/** Une la base de datos con ComfyUI y sigue el avance de cada trabajo. */
 class Generator extends EventEmitter {
   private inFlight = new Map<string, InFlight>()
 
   constructor() {
     super()
+
     comfyClient.on('progress', (e: { promptId: string; value: number; max: number }) => {
       const job = this.inFlight.get(e.promptId)
       if (!job) return
@@ -40,7 +72,7 @@ class Generator extends EventEmitter {
         messageId: job.messageId,
         value: 0,
         max: 0,
-        currentNode: this.nodeLabel(job.presetId, e.node)
+        currentNode: job.labels[e.node] ?? ''
       } satisfies GenerationProgress)
     })
 
@@ -65,38 +97,13 @@ class Generator extends EventEmitter {
     })
   }
 
-  /** Nombre legible del nodo que se esta ejecutando, para la barra de progreso. */
-  private nodeLabel(presetId: string, nodeId: string): string {
-    try {
-      const node = getPreset(presetId).workflow[nodeId]
-      if (!node) return ''
-      const friendly: Record<string, string> = {
-        CheckpointLoaderSimple: 'Cargando modelo',
-        UNETLoader: 'Cargando modelo',
-        LoraLoader: 'Aplicando LoRA',
-        DualCLIPLoader: 'Cargando codificadores de texto',
-        VAELoader: 'Cargando VAE',
-        CLIPTextEncode: 'Procesando prompt',
-        EmptyLatentImage: 'Preparando lienzo',
-        EmptySD3LatentImage: 'Preparando lienzo',
-        KSampler: 'Generando',
-        LatentUpscale: 'Escalando',
-        VAEDecode: 'Decodificando imagen',
-        SaveImage: 'Guardando'
-      }
-      return friendly[node.class_type] ?? node.class_type
-    } catch {
-      return ''
-    }
-  }
-
   private emitMessage(messageId: string): void {
     const message = messagesRepo.get(messageId)
     if (message) this.emit('message', message)
   }
 
   async submit(input: SubmitInput): Promise<Message> {
-    const preset = getPreset(input.presetId)
+    const recipe = getRecipe(input.presetId)
 
     const params = { ...input.params }
     if (params.randomSeed) params.seed = randomSeed()
@@ -114,21 +121,24 @@ class Generator extends EventEmitter {
     conversationsRepo.autoTitle(input.conversationId, input.prompt)
 
     try {
-      const workflow = buildWorkflow(
-        preset,
+      const workflow = buildWorkflow({
+        recipe,
         params,
-        input.prompt,
-        input.negative,
-        input.inputImagePath
-      )
+        prompt: input.prompt,
+        negative: input.negative,
+        inputImageName: input.inputImagePath
+      })
 
       const promptId = await comfyClient.submit(workflow)
-      this.inFlight.set(promptId, { messageId: message.id, presetId: input.presetId })
+      this.inFlight.set(promptId, { messageId: message.id, labels: labelsFor(workflow) })
       messagesRepo.setPromptId(message.id, promptId)
       messagesRepo.setStatus(message.id, 'running')
     } catch (err) {
-      const detail = err instanceof Error ? err.message : String(err)
-      messagesRepo.setStatus(message.id, 'error', detail)
+      messagesRepo.setStatus(
+        message.id,
+        'error',
+        err instanceof Error ? err.message : String(err)
+      )
     }
 
     const saved = messagesRepo.get(message.id)
@@ -174,9 +184,8 @@ class Generator extends EventEmitter {
   }
 
   async cancel(messageId: string): Promise<void> {
-    const entry = [...this.inFlight.entries()].find(([, j]) => j.messageId === messageId)
-    if (!entry) return
-    await comfyClient.interrupt()
+    const found = [...this.inFlight.values()].some((j) => j.messageId === messageId)
+    if (found) await comfyClient.interrupt()
   }
 }
 

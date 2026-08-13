@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { useStore, imageUrl } from '../store/useStore'
+import { Icon } from './ui/icon'
+import { Button } from './ui/button'
+import { cn } from '@/lib/utils'
 
 export default function ConversationList(): React.JSX.Element {
   const conversations = useStore((s) => s.conversations)
   const activeId = useStore((s) => s.activeId)
-  const presets = useStore((s) => s.presets)
+  const recipes = useStore((s) => s.recipes)
   const select = useStore((s) => s.selectConversation)
   const create = useStore((s) => s.newConversation)
   const remove = useStore((s) => s.removeConversation)
@@ -19,137 +22,145 @@ export default function ConversationList(): React.JSX.Element {
     c.title.toLowerCase().includes(query.trim().toLowerCase())
   )
 
-  function startRename(id: string, title: string): void {
-    setEditing(id)
-    setDraft(title)
-  }
-
   function commitRename(): void {
     if (editing && draft.trim()) void rename(editing, draft.trim())
     setEditing(null)
   }
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col border-l border-border bg-surface">
-      <div className="shrink-0 space-y-2 border-b border-border p-3">
-        <button
-          onClick={() => void create()}
-          className="w-full rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white"
-        >
+    <aside className="w-[268px] shrink-0 p-4 pl-2">
+      <div className="glass flex h-full flex-col p-3">
+        <Button fullWidth size="sm" icon="add" onClick={() => void create()}>
           Nueva conversacion
-        </button>
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar..."
-          className="w-full rounded-lg border border-border bg-surface-2 px-2.5 py-1.5 text-xs outline-none focus:border-accent"
-        />
-      </div>
+        </Button>
 
-      <div className="flex-1 overflow-y-auto p-2">
-        {visible.length === 0 && (
-          <p className="px-2 py-6 text-center text-xs text-muted">
-            {conversations.length === 0 ? 'Todavia no hay conversaciones' : 'Nada coincide'}
-          </p>
-        )}
+        <div className="relative mt-2.5">
+          <Icon
+            name="search"
+            className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[16px] text-ink-400"
+          />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar"
+            className="w-full rounded-chip border border-line/60 bg-white/70 py-1.5 pl-8 pr-2 text-[12px] outline-none focus:border-halo/50 focus:ring-4 focus:ring-halo/14"
+          />
+        </div>
 
-        {visible.map((c) => {
-          const preset = presets.find((p) => p.id === c.presetId)
-          const active = c.id === activeId
+        <div className="scroll mt-2.5 flex-1">
+          {visible.length === 0 && (
+            <p className="px-2 py-8 text-center text-[12px] leading-snug text-ink-400">
+              {conversations.length === 0 ? 'Todavia no hay conversaciones' : 'Nada coincide'}
+            </p>
+          )}
 
-          return (
-            <div
-              key={c.id}
-              onClick={() => void select(c.id)}
-              className={`group mb-1.5 cursor-pointer rounded-lg border p-2 transition-colors ${
-                active
-                  ? 'border-accent bg-accent-soft'
-                  : 'border-transparent hover:bg-surface-2'
-              }`}
-            >
-              <div className="flex gap-2">
-                {c.thumbnail ? (
-                  <img
-                    src={imageUrl(c.thumbnail)}
-                    alt=""
-                    className="h-11 w-11 shrink-0 rounded object-cover"
-                  />
-                ) : (
-                  <div className="h-11 w-11 shrink-0 rounded bg-surface-2" />
+          {visible.map((c) => {
+            const recipe = recipes.find((r) => r.id === c.presetId)
+            const active = c.id === activeId
+
+            return (
+              <div
+                key={c.id}
+                onClick={() => void select(c.id)}
+                className={cn(
+                  'group mb-1.5 cursor-pointer rounded-box border p-2 transition-all duration-200',
+                  active
+                    ? 'border-white/85 bg-white/85 shadow-soft'
+                    : 'border-transparent hover:bg-white/50'
                 )}
-
-                <div className="min-w-0 flex-1">
-                  {editing === c.id ? (
-                    <input
-                      autoFocus
-                      value={draft}
-                      onChange={(e) => setDraft(e.target.value)}
-                      onBlur={commitRename}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') commitRename()
-                        if (e.key === 'Escape') setEditing(null)
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      className="w-full rounded border border-accent bg-surface-2 px-1 text-xs outline-none"
+              >
+                <div className="flex gap-2">
+                  {c.thumbnail ? (
+                    <img
+                      src={imageUrl(c.thumbnail)}
+                      alt=""
+                      className="h-11 w-11 shrink-0 rounded-chip object-cover shadow-soft"
                     />
                   ) : (
-                    <p className="truncate text-xs font-medium">{c.title}</p>
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-chip bg-fog/25">
+                      <Icon name="image" className="text-[18px] text-ink-300" />
+                    </span>
                   )}
-                  <p className="truncate text-[11px] text-muted">
-                    {preset?.name ?? c.presetId} · {c.messageCount}
-                  </p>
+
+                  <div className="min-w-0 flex-1">
+                    {editing === c.id ? (
+                      <input
+                        autoFocus
+                        value={draft}
+                        onChange={(e) => setDraft(e.target.value)}
+                        onBlur={commitRename}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') commitRename()
+                          if (e.key === 'Escape') setEditing(null)
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full rounded border border-cobalt-500 bg-white px-1 text-[12px] outline-none"
+                      />
+                    ) : (
+                      <p
+                        className={cn(
+                          'truncate text-[12px] font-bold',
+                          active ? 'text-cobalt-700' : 'text-ink-800'
+                        )}
+                      >
+                        {c.title}
+                      </p>
+                    )}
+                    <p className="truncate text-[11px] text-ink-400">
+                      {recipe?.name ?? 'Modelo no disponible'} · {c.messageCount}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-1 hidden gap-2.5 pl-[52px] group-hover:flex">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setEditing(c.id)
+                      setDraft(c.title)
+                    }}
+                    className="text-[11px] font-semibold text-ink-400 transition-colors hover:text-cobalt-600"
+                  >
+                    Renombrar
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setConfirmDelete(c.id)
+                    }}
+                    className="text-[11px] font-semibold text-ink-400 transition-colors hover:text-rose"
+                  >
+                    Borrar
+                  </button>
                 </div>
               </div>
-
-              <div className="mt-1 hidden gap-2 text-[11px] group-hover:flex">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    startRename(c.id, c.title)
-                  }}
-                  className="text-muted underline hover:text-text"
-                >
-                  Renombrar
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setConfirmDelete(c.id)
-                  }}
-                  className="text-muted underline hover:text-danger"
-                >
-                  Borrar
-                </button>
-              </div>
-            </div>
-          )
-        })}
+            )
+          })}
+        </div>
       </div>
 
       {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6">
-          <div className="w-full max-w-sm rounded-xl border border-border bg-surface p-5">
-            <h3 className="font-medium">Borrar conversacion</h3>
-            <p className="mt-2 text-sm text-muted">
+        <div className="fixed inset-0 z-50 grid place-items-center bg-ink-900/25 p-6 backdrop-blur-sm">
+          <div className="glass-strong w-full max-w-sm rounded-panel p-5 shadow-deep">
+            <h3 className="text-[15px] font-extrabold text-ink-900">Borrar conversacion</h3>
+            <p className="mt-2 text-[13px] leading-snug text-ink-600">
               Se borra la conversacion y su historial. Las imagenes ya generadas siguen en la
               carpeta de salida de ComfyUI.
             </p>
             <div className="mt-5 flex justify-end gap-2">
-              <button
-                onClick={() => setConfirmDelete(null)}
-                className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-surface-2"
-              >
+              <Button size="sm" variant="outline" onClick={() => setConfirmDelete(null)}>
                 Cancelar
-              </button>
-              <button
+              </Button>
+              <Button
+                size="sm"
+                variant="danger"
                 onClick={() => {
                   void remove(confirmDelete)
                   setConfirmDelete(null)
                 }}
-                className="rounded-lg bg-danger px-3 py-1.5 text-sm text-white"
               >
                 Borrar
-              </button>
+              </Button>
             </div>
           </div>
         </div>

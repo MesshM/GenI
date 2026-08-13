@@ -13,7 +13,9 @@ const DEFAULTS: AppSettings = {
   autoStartComfy: true,
   comfyHost: '127.0.0.1',
   comfyPort: 8188,
-  theme: 'dark'
+  theme: 'light',
+  civitaiToken: '',
+  huggingFaceToken: ''
 }
 
 /** Rutas donde suele estar ComfyUI, para no obligar a buscarla a mano. */
@@ -41,7 +43,9 @@ export function getSettings(): AppSettings {
     autoStartComfy: (stored.autoStartComfy ?? String(DEFAULTS.autoStartComfy)) === 'true',
     comfyHost: stored.comfyHost ?? DEFAULTS.comfyHost,
     comfyPort: Number(stored.comfyPort ?? DEFAULTS.comfyPort),
-    theme: (stored.theme as AppSettings['theme']) ?? DEFAULTS.theme
+    theme: (stored.theme as AppSettings['theme']) ?? DEFAULTS.theme,
+    civitaiToken: stored.civitaiToken ?? DEFAULTS.civitaiToken,
+    huggingFaceToken: stored.huggingFaceToken ?? DEFAULTS.huggingFaceToken
   }
 }
 
