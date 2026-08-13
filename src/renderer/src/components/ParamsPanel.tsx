@@ -91,7 +91,7 @@ export default function ParamsPanel(): React.JSX.Element {
             <button
               onClick={() => setPicking((v) => !v)}
               disabled={availableLoras.length === 0}
-              className="flex items-center gap-1 rounded-chip border border-line/70 bg-white/70 px-2 py-1 text-[11px] font-bold text-cobalt-600 shadow-soft transition-colors hover:bg-white disabled:opacity-40"
+              className="flex items-center gap-1 rounded-chip border border-line/70 bg-white/70 px-2 py-1 text-[11px] font-bold text-cobalt-600 shadow-soft transition-colors hover:bg-white disabled:opacity-40 dark:bg-white/6 dark:hover:bg-white/10"
             >
               <Icon name="add" className="text-[14px]" />
               Agregar
@@ -99,7 +99,7 @@ export default function ParamsPanel(): React.JSX.Element {
           }
         >
           {picking && availableLoras.length > 0 && (
-            <div className="mb-3 max-h-52 overflow-y-auto rounded-box border border-line/60 bg-white/80 p-1.5 shadow-soft">
+            <div className="mb-3 max-h-52 overflow-y-auto rounded-box border border-line/60 bg-white/80 p-1.5 shadow-soft dark:bg-white/6">
               {availableLoras.map((m) => (
                 <button
                   key={m.id}
@@ -141,8 +141,8 @@ export default function ParamsPanel(): React.JSX.Element {
                 className={cn(
                   'mb-2 rounded-box border p-2.5 transition-colors',
                   lora.enabled
-                    ? 'border-white/80 bg-white/70 shadow-soft'
-                    : 'border-line/50 bg-white/30 opacity-60'
+                    ? 'border-white/80 bg-white/70 shadow-soft dark:border-white/10 dark:bg-white/6'
+                    : 'border-line/50 bg-white/30 opacity-60 dark:bg-white/3'
                 )}
               >
                 <div className="mb-1.5 flex items-center gap-2">
@@ -210,7 +210,7 @@ export default function ParamsPanel(): React.JSX.Element {
                                   'rounded-full px-2 py-0.5 text-[10px] font-bold transition-colors',
                                   active
                                     ? 'bg-cta text-white shadow-blue'
-                                    : 'border border-line/70 bg-white/60 text-ink-500 hover:text-cobalt-600'
+                                    : 'border border-line/70 bg-white/60 text-ink-500 hover:text-cobalt-600 dark:bg-white/5'
                                 )}
                               >
                                 {word}
@@ -253,7 +253,7 @@ export default function ParamsPanel(): React.JSX.Element {
                       'rounded-chip border px-2 py-1.5 text-left text-[11px] font-bold transition-colors',
                       active
                         ? 'border-cobalt-500/60 bg-tint/16 text-cobalt-700'
-                        : 'border-line/60 bg-white/50 text-ink-600 hover:bg-white'
+                        : 'border-line/60 bg-white/50 text-ink-600 hover:bg-white dark:bg-white/5 dark:hover:bg-white/10'
                     )}
                   >
                     <span className="block truncate">{r.label}</span>

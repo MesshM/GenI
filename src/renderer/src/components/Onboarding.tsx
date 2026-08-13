@@ -55,7 +55,7 @@ export default function Onboarding(): React.JSX.Element {
         </h1>
         <p className="mt-2 text-[14px] leading-relaxed text-ink-600">
           Para empezar necesito saber donde esta instalado ComfyUI. Es la carpeta que contiene{' '}
-          <code className="rounded bg-white/70 px-1.5 py-0.5 font-mono text-[12px] text-cobalt-700">
+          <code className="rounded bg-white/70 px-1.5 py-0.5 font-mono text-[12px] text-cobalt-700 dark:bg-white/8">
             main.py
           </code>
           .
@@ -79,7 +79,7 @@ export default function Onboarding(): React.JSX.Element {
               setDetected(false)
             }}
             placeholder="C:\Users\...\ComfyUI"
-            className="min-w-0 flex-1 rounded-chip border border-line/70 bg-white/80 px-3 py-2.5 text-[13px] outline-none focus:border-halo/50 focus:ring-4 focus:ring-halo/14"
+            className="min-w-0 flex-1 rounded-chip border border-line/70 bg-white/80 px-3 py-2.5 text-[13px] text-ink-800 outline-none focus:border-halo/50 focus:ring-4 focus:ring-halo/14 dark:bg-white/6"
           />
           <Button variant="secondary" icon="folder_open" onClick={() => void browse()}>
             Buscar

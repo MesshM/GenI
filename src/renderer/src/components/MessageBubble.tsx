@@ -26,7 +26,7 @@ export default function MessageBubble({ message, progress }: Props): React.JSX.E
   const activeLoras = message.params.loras.filter((l) => l.enabled)
 
   return (
-    <article className="mb-4 animate-fade-up rounded-panel border border-white/75 bg-white/60 p-4 shadow-soft backdrop-blur">
+    <article className="mb-4 animate-fade-up rounded-panel border border-white/75 bg-white/60 p-4 shadow-soft backdrop-blur dark:border-white/10 dark:bg-white/6">
       <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-ink-800">
         {message.prompt}
       </p>
@@ -90,7 +90,7 @@ export default function MessageBubble({ message, progress }: Props): React.JSX.E
           {message.generations.map((g) => (
             <figure
               key={g.id}
-              className="group/img relative overflow-hidden rounded-box bg-white/50 shadow-soft"
+              className="group/img relative overflow-hidden rounded-box bg-white/50 shadow-soft dark:bg-white/5"
             >
               <img
                 src={imageUrl(g.absPath)}
@@ -124,7 +124,7 @@ export default function MessageBubble({ message, progress }: Props): React.JSX.E
 
 function Chip({ icon, children }: { icon: string; children: React.ReactNode }): React.JSX.Element {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-line/50 bg-white/60 px-2 py-0.5 text-[11px] font-bold text-ink-500">
+    <span className="inline-flex items-center gap-1 rounded-full border border-line/50 bg-white/60 px-2 py-0.5 text-[11px] font-bold text-ink-500 dark:bg-white/6">
       <Icon name={icon} className="text-[13px]" />
       {children}
     </span>

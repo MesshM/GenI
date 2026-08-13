@@ -21,10 +21,10 @@ const VARIANT: Record<ButtonVariant, string> = {
   primary:
     'text-white bg-cta shadow-cta hover:-translate-y-0.5 hover:brightness-105 hover:shadow-cta-hover',
   secondary:
-    'text-ink-900 bg-white/70 border-white/80 shadow-soft hover:bg-white hover:-translate-y-px hover:shadow-lift',
+    'text-ink-900 bg-white/70 border-white/80 shadow-soft hover:bg-white hover:-translate-y-px hover:shadow-lift dark:bg-white/6 dark:border-white/10 dark:hover:bg-white/12',
   outline:
-    'text-ink-700 bg-transparent border-[oklch(0.8_0.03_262/0.7)] hover:border-cobalt-500 hover:text-cobalt-700 hover:bg-white/50',
-  ghost: 'text-ink-700 bg-fog/12 hover:bg-white/85 hover:text-cobalt-600',
+    'text-ink-700 bg-transparent border-[oklch(0.8_0.03_262/0.7)] hover:border-cobalt-500 hover:text-cobalt-700 hover:bg-white/50 dark:border-white/16 dark:hover:bg-white/8',
+  ghost: 'text-ink-700 bg-fog/12 hover:bg-white/85 hover:text-cobalt-600 dark:hover:bg-white/10',
   danger:
     'text-white bg-cta-danger shadow-[0_12px_28px_-14px_oklch(0.64_0.16_18/0.6)] hover:-translate-y-px hover:brightness-[1.06]'
 }

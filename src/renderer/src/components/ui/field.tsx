@@ -4,8 +4,11 @@ import { cn } from '@/lib/utils'
 // Controles de formulario con el acabado de docline: bordes suaves,
 // foco con halo azul y sombra interior sutil.
 
+// bg-white/* es literal (no un token que docline re-tina en oscuro): sin el
+// dark: de al lado quedaria un recuadro gris claro con texto casi blanco
+// encima, poco legible. En oscuro va translucido sobre negro, no blanco.
 const CONTROL =
-  'w-full rounded-chip border border-line/70 bg-white/70 px-3 py-2 text-[13px] text-ink-800 shadow-[inset_0_1px_2px_rgba(38,54,110,0.04)] outline-none transition-[border-color,box-shadow,background] duration-200 placeholder:text-ink-400 focus:border-halo/50 focus:bg-white focus:ring-4 focus:ring-halo/14 disabled:opacity-50'
+  'w-full rounded-chip border border-line/70 bg-white/70 px-3 py-2 text-[13px] text-ink-800 shadow-[inset_0_1px_2px_rgba(38,54,110,0.04)] outline-none transition-[border-color,box-shadow,background] duration-200 placeholder:text-ink-400 focus:border-halo/50 focus:bg-white focus:ring-4 focus:ring-halo/14 disabled:opacity-50 dark:bg-white/6 dark:focus:bg-white/10'
 
 interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string
@@ -157,7 +160,7 @@ export function Slider({
           max={max}
           step={step}
           onChange={(e) => onChange(clamp(Number(e.target.value)))}
-          className="w-[70px] rounded-[8px] border border-line/70 bg-white/80 px-1.5 py-0.5 text-right text-[12px] font-bold text-ink-800 outline-none focus:border-halo/50 focus:ring-2 focus:ring-halo/14"
+          className="w-[70px] rounded-[8px] border border-line/70 bg-white/80 px-1.5 py-0.5 text-right text-[12px] font-bold text-ink-800 outline-none focus:border-halo/50 focus:ring-2 focus:ring-halo/14 dark:bg-white/6"
         />
       </div>
       <input

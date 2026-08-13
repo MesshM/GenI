@@ -35,7 +35,7 @@ export default function TopBar(): React.JSX.Element {
         <button
           onClick={() => hasLog && setShowLog((v) => !v)}
           className={cn(
-            'no-drag flex items-center gap-2 rounded-full border border-white/70 bg-white/60 px-3.5 py-1.5 text-[12px] font-bold text-ink-700 shadow-soft backdrop-blur transition-colors',
+            'no-drag flex items-center gap-2 rounded-full border border-white/70 bg-white/60 px-3.5 py-1.5 text-[12px] font-bold text-ink-700 shadow-soft backdrop-blur transition-colors dark:border-white/10 dark:bg-white/6',
             hasLog && 'hover:bg-white'
           )}
         >
@@ -59,7 +59,7 @@ export default function TopBar(): React.JSX.Element {
         <div className="flex-1" />
 
         {update?.available && (
-          <div className="no-drag flex items-center gap-2 rounded-full border border-white/70 bg-white/70 px-3 py-1.5 text-[12px] font-bold text-ink-700 shadow-soft backdrop-blur">
+          <div className="no-drag flex items-center gap-2 rounded-full border border-white/70 bg-white/70 px-3 py-1.5 text-[12px] font-bold text-ink-700 shadow-soft backdrop-blur dark:border-white/10 dark:bg-white/6">
             <Icon name="rocket_launch" className="text-[16px] text-cobalt-600" />
             <span>Version {update.version}</span>
             {update.downloaded ? (
@@ -84,7 +84,7 @@ export default function TopBar(): React.JSX.Element {
       </header>
 
       {showLog && hasLog && (
-        <div className="mx-6 mb-3 max-h-52 shrink-0 overflow-auto rounded-panel border border-white/70 bg-white/70 p-3 font-mono text-[11px] leading-relaxed text-ink-600 shadow-soft backdrop-blur">
+        <div className="mx-6 mb-3 max-h-52 shrink-0 overflow-auto rounded-panel border border-white/70 bg-white/70 p-3 font-mono text-[11px] leading-relaxed text-ink-600 shadow-soft backdrop-blur dark:border-white/10 dark:bg-white/6">
           {comfy.state === 'error' && (
             <p className="mb-2 font-sans text-[12px] font-bold text-rose-text">{comfy.message}</p>
           )}

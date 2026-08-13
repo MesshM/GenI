@@ -123,7 +123,7 @@ export default function ModelsView(): React.JSX.Element {
             'mb-4 rounded-panel border-2 border-dashed p-7 text-center transition-colors',
             dragging
               ? 'border-cobalt-500 bg-tint/14'
-              : 'border-line/70 bg-white/40 hover:border-cobalt-500/50'
+              : 'border-line/70 bg-white/40 hover:border-cobalt-500/50 dark:bg-white/4'
           )}
         >
           <Icon
@@ -160,7 +160,7 @@ export default function ModelsView(): React.JSX.Element {
         </div>
 
         {/* Descarga por URL */}
-        <div className="mb-4 rounded-panel border border-white/70 bg-white/55 p-4 shadow-soft backdrop-blur">
+        <div className="mb-4 rounded-panel border border-white/70 bg-white/55 p-4 shadow-soft backdrop-blur dark:border-white/10 dark:bg-white/6">
           <div className="flex items-center gap-2">
             <Icon name="link" className="text-[20px] text-cobalt-500" />
             <input
@@ -168,7 +168,7 @@ export default function ModelsView(): React.JSX.Element {
               onChange={(e) => setUrl(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && void startDownload()}
               placeholder="Pega un enlace de Civitai o Hugging Face"
-              className="min-w-0 flex-1 rounded-chip border border-line/70 bg-white/80 px-3 py-2 text-[13px] outline-none focus:border-halo/50 focus:ring-4 focus:ring-halo/14"
+              className="min-w-0 flex-1 rounded-chip border border-line/70 bg-white/80 px-3 py-2 text-[13px] text-ink-800 outline-none focus:border-halo/50 focus:ring-4 focus:ring-halo/14 dark:bg-white/6"
             />
             <Button size="sm" icon="download" onClick={() => void startDownload()}>
               Descargar
@@ -179,7 +179,7 @@ export default function ModelsView(): React.JSX.Element {
           {active.map((job) => {
             const pct = job.totalBytes ? Math.round((job.receivedBytes / job.totalBytes) * 100) : 0
             return (
-              <div key={job.id} className="mt-3 rounded-box bg-white/70 p-2.5">
+              <div key={job.id} className="mt-3 rounded-box bg-white/70 p-2.5 dark:bg-white/6">
                 <div className="mb-1 flex items-center justify-between gap-2 text-[12px]">
                   <span className="min-w-0 truncate font-bold text-ink-800">
                     {job.filename || 'Resolviendo enlace...'}
@@ -217,7 +217,7 @@ export default function ModelsView(): React.JSX.Element {
 
         {/* Resultado de la ultima importacion */}
         {results.length > 0 && (
-          <div className="mb-4 rounded-panel border border-white/70 bg-white/55 p-3 shadow-soft">
+          <div className="mb-4 rounded-panel border border-white/70 bg-white/55 p-3 shadow-soft dark:border-white/10 dark:bg-white/6">
             {results.map((r, i) => (
               <div key={i} className="flex items-start gap-2 py-1 text-[12px]">
                 <Icon
@@ -278,7 +278,7 @@ export default function ModelsView(): React.JSX.Element {
               {group.items.map((m) => (
                 <div
                   key={m.id}
-                  className="group flex items-center gap-3 rounded-box border border-white/70 bg-white/55 px-3 py-2.5 shadow-soft backdrop-blur transition-shadow hover:shadow-lift"
+                  className="group flex items-center gap-3 rounded-box border border-white/70 bg-white/55 px-3 py-2.5 shadow-soft backdrop-blur transition-shadow hover:shadow-lift dark:border-white/10 dark:bg-white/6"
                 >
                   <Icon
                     name={KIND_ICON[m.kind]}

@@ -211,6 +211,10 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
   font-size: 14px;
+  /* Base subida de normal (400) a medium (500): el texto sin peso
+     explicito (párrafos, placeholders, valores) se lee mejor, sobre
+     todo en oscuro. Los font-bold/font-semibold puntuales no cambian. */
+  font-weight: 500;
 }
 
 .material-symbols-rounded {

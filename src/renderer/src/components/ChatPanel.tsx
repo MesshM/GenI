@@ -33,7 +33,7 @@ export default function ChatPanel(): React.JSX.Element {
       <div className="scroll flex-1 px-4 pt-2">
         {messages.length === 0 ? (
           <div className="mx-auto mt-24 max-w-md animate-fade-up text-center">
-            <span className="grid mx-auto h-14 w-14 place-items-center rounded-panel bg-white/70 shadow-lift">
+            <span className="grid mx-auto h-14 w-14 place-items-center rounded-panel bg-white/70 shadow-lift dark:bg-white/6">
               <Icon name="auto_awesome" filled className="text-[28px] text-cobalt-500" />
             </span>
             <p className="mt-4 text-[17px] font-extrabold tracking-tight text-ink-800">
