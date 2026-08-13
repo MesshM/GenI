@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { classify, FOLDER_BY_KIND, readSafetensorsHeader } from './detect'
-import { modelsRoot, upsertModel } from './manager'
+import { findByFilenameAndSource, modelsRoot, upsertModel } from './manager'
 import { getSettings } from '../settings'
 import type { DownloadJob, ModelKind } from '@shared/types'
 
@@ -18,6 +18,8 @@ interface Resolved {
   triggerWords: string[]
   headers: Record<string, string>
   source: 'civitai' | 'huggingface'
+  /** Id de version de Civitai o revision de Hugging Face. */
+  versionId: string | null
 }
 
 const CIVITAI_KIND: Record<string, ModelKind> = {
@@ -68,7 +70,7 @@ class Downloader extends EventEmitter {
     this.jobs.set(id, job)
     this.emit('job', job)
 
-    void this.run(id, url)
+    void this.runFromUrl(id, url)
     return job
   }
 
@@ -78,16 +80,66 @@ class Downloader extends EventEmitter {
     this.update(id, { state: 'cancelled' })
   }
 
-  private async run(id: string, url: string): Promise<void> {
+  /**
+   * Resuelve la URL (puede traer mas de un archivo: un checkpoint que
+   * declara su VAE o su codificador de texto en la misma version de
+   * Civitai) y descarga cada uno. El primero reutiliza el job ya creado
+   * en `start`; el resto arranca su propio job, asi que en la interfaz
+   * aparecen como descargas separadas sin que el renderer tenga que saber
+   * que vinieron de la misma URL.
+   */
+  private async runFromUrl(id: string, url: string): Promise<void> {
+    let resolved: Resolved[]
+    try {
+      resolved = await resolveUrl(url)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      this.update(id, { state: 'error', error: message })
+      return
+    }
+
+    const [first, ...rest] = resolved
+    await this.run(id, first, url)
+
+    for (const extra of rest) {
+      const extraId = randomUUID()
+      const extraJob: DownloadJob = {
+        id: extraId,
+        url,
+        filename: '',
+        kind: 'unknown',
+        receivedBytes: 0,
+        totalBytes: 0,
+        state: 'resolving',
+        error: null
+      }
+      this.jobs.set(extraId, extraJob)
+      this.emit('job', extraJob)
+      await this.run(extraId, extra, url)
+    }
+  }
+
+  private async run(id: string, resolved: Resolved, pageUrl: string): Promise<void> {
     let partialPath: string | null = null
 
     try {
-      const resolved = await resolveUrl(url)
-      this.update(id, {
-        filename: resolved.filename,
-        kind: resolved.declaredKind,
-        state: 'downloading'
-      })
+      this.update(id, { filename: resolved.filename, kind: resolved.declaredKind })
+
+      // Si ya esta instalado con la misma version, no hace falta bajar los
+      // bytes de nuevo. Sin version conocida (o si cambio) se trata como
+      // una actualizacion: se vuelve a descargar y se pisa el archivo.
+      const already = findByFilenameAndSource(resolved.filename, resolved.source)
+      if (already && resolved.versionId && already.sourceVersion === resolved.versionId) {
+        this.update(id, {
+          receivedBytes: already.sizeBytes,
+          totalBytes: already.sizeBytes,
+          kind: already.kind,
+          state: 'done'
+        })
+        return
+      }
+
+      this.update(id, { state: 'downloading' })
 
       const targetDir = join(modelsRoot(), FOLDER_BY_KIND[resolved.declaredKind])
       await mkdir(targetDir, { recursive: true })
@@ -156,7 +208,8 @@ class Downloader extends EventEmitter {
           ? resolved.triggerWords
           : (detection?.triggerWords ?? []),
         source: resolved.source,
-        sourceUrl: url,
+        sourceUrl: pageUrl,
+        sourceVersion: resolved.versionId,
         notes: ''
       })
 
@@ -176,7 +229,7 @@ class Downloader extends EventEmitter {
 }
 
 /** Distingue el origen por el dominio y consulta su API. */
-async function resolveUrl(raw: string): Promise<Resolved> {
+async function resolveUrl(raw: string): Promise<Resolved[]> {
   let url: URL
   try {
     url = new URL(raw.trim())
@@ -189,11 +242,11 @@ async function resolveUrl(raw: string): Promise<Resolved> {
   if (url.hostname.endsWith('civitai.com') || url.hostname.endsWith('civitai.red')) {
     return resolveCivitai(url)
   }
-  if (url.hostname.endsWith('huggingface.co')) return resolveHuggingFace(url)
+  if (url.hostname.endsWith('huggingface.co')) return [await resolveHuggingFace(url)]
   throw new Error('Solo se admiten enlaces de civitai.com, civitai.red o huggingface.co')
 }
 
-async function resolveCivitai(url: URL): Promise<Resolved> {
+async function resolveCivitai(url: URL): Promise<Resolved[]> {
   const token = getSettings().civitaiToken
   const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {}
 
@@ -222,17 +275,28 @@ async function resolveCivitai(url: URL): Promise<Resolved> {
     model?: { type?: string }
   }
 
-  const file = data.files?.find((f) => f.primary) ?? data.files?.[0]
-  if (!file) throw new Error('Esa version no tiene archivos para descargar')
+  const allFiles = data.files ?? []
+  const primary = allFiles.find((f) => f.primary) ?? allFiles[0]
+  if (!primary) throw new Error('Esa version no tiene archivos para descargar')
 
-  return {
+  // La version puede traer, ademas del modelo, componentes que necesita
+  // para funcionar (VAE, codificador de texto) como archivos aparte. Se
+  // bajan todos los que Civitai declara con un tipo reconocido; el resto
+  // (config, datos de entrenamiento, formatos alternativos del mismo
+  // archivo) se ignora para no traer varios GB de mas por accidente.
+  const companions = allFiles.filter(
+    (f) => f !== primary && f.type && CIVITAI_KIND[f.type] !== undefined
+  )
+
+  return [primary, ...companions].map((file) => ({
     downloadUrl: file.downloadUrl,
     filename: file.name,
-    declaredKind: CIVITAI_KIND[data.model?.type ?? ''] ?? 'unknown',
+    declaredKind: CIVITAI_KIND[file.type ?? ''] ?? CIVITAI_KIND[data.model?.type ?? ''] ?? 'unknown',
     triggerWords: data.trainedWords ?? [],
     headers,
-    source: 'civitai'
-  }
+    versionId,
+    source: 'civitai' as const
+  }))
 }
 
 async function resolveHuggingFace(url: URL): Promise<Resolved> {
@@ -257,6 +321,9 @@ async function resolveHuggingFace(url: URL): Promise<Resolved> {
     downloadUrl: `https://huggingface.co/${repo}/resolve/${revision}/${filePath}?download=true`,
     filename: filePath.split('/').pop() as string,
     declaredKind: 'unknown',
+    // "main" no es una version fija (el archivo detras puede cambiar sin
+    // avisar); solo se usa como identidad de version si es un commit fijo.
+    versionId: /^[0-9a-f]{7,40}$/i.test(revision) ? revision : null,
     triggerWords: [],
     headers,
     source: 'huggingface'

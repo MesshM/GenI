@@ -107,5 +107,14 @@ export const MIGRATIONS: Migration[] = [
         CREATE INDEX idx_presets_recipe ON presets(recipe_id);
       `)
     }
+  },
+  {
+    version: 4,
+    up(db) {
+      // Version del archivo en su origen (id de version de Civitai, revision
+      // de Hugging Face). Antes de descargar algo se compara contra esto: si
+      // coincide con lo ya instalado, no hace falta bajarlo de nuevo.
+      db.exec(`ALTER TABLE models ADD COLUMN source_version TEXT;`)
+    }
   }
 ]

@@ -32,6 +32,7 @@ interface ModelRow {
   trigger_words: string
   source: string
   source_url: string | null
+  source_version: string | null
   notes: string
   created_at: number
 }
@@ -47,9 +48,26 @@ function toAsset(r: ModelRow): ModelAsset {
     triggerWords: JSON.parse(r.trigger_words) as string[],
     source: r.source as ModelAsset['source'],
     sourceUrl: r.source_url,
+    sourceVersion: r.source_version,
     notes: r.notes,
     createdAt: r.created_at
   }
+}
+
+/**
+ * Busca un modelo ya instalado con el mismo nombre de archivo y el mismo
+ * origen. Se usa antes de descargar para no volver a bajar bytes de algo
+ * que ya esta: si la version coincide se salta, si no, se trata como una
+ * actualizacion.
+ */
+export function findByFilenameAndSource(
+  filename: string,
+  source: ModelAsset['source']
+): ModelAsset | null {
+  const row = getDb()
+    .prepare('SELECT * FROM models WHERE filename = ? AND source = ?')
+    .get(filename, source) as ModelRow | undefined
+  return row ? toAsset(row) : null
 }
 
 export function modelsRoot(): string {
@@ -79,13 +97,16 @@ function upsert(asset: Omit<ModelAsset, 'id' | 'createdAt'>): ModelAsset {
     // Ya estaba indexado: se refresca lo que puede haber cambiado en disco,
     // pero se respetan las notas y los triggers que haya editado el usuario.
     getDb()
-      .prepare('UPDATE models SET kind = ?, architecture = ?, size_bytes = ? WHERE id = ?')
-      .run(asset.kind, asset.architecture, asset.sizeBytes, existing.id)
+      .prepare(
+        'UPDATE models SET kind = ?, architecture = ?, size_bytes = ?, source_version = ? WHERE id = ?'
+      )
+      .run(asset.kind, asset.architecture, asset.sizeBytes, asset.sourceVersion, existing.id)
     return toAsset({
       ...existing,
       kind: asset.kind,
       architecture: asset.architecture,
-      size_bytes: asset.sizeBytes
+      size_bytes: asset.sizeBytes,
+      source_version: asset.sourceVersion
     })
   }
 
@@ -94,8 +115,8 @@ function upsert(asset: Omit<ModelAsset, 'id' | 'createdAt'>): ModelAsset {
   getDb()
     .prepare(
       `INSERT INTO models
-         (id, kind, architecture, filename, abs_path, size_bytes, trigger_words, source, source_url, notes, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         (id, kind, architecture, filename, abs_path, size_bytes, trigger_words, source, source_url, source_version, notes, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       id,
@@ -107,6 +128,7 @@ function upsert(asset: Omit<ModelAsset, 'id' | 'createdAt'>): ModelAsset {
       JSON.stringify(asset.triggerWords),
       asset.source,
       asset.sourceUrl,
+      asset.sourceVersion,
       asset.notes,
       createdAt
     )
@@ -163,6 +185,7 @@ export async function scanModels(): Promise<{ found: number; removed: number }> 
         triggerWords: detection.triggerWords,
         source: 'scan',
         sourceUrl: null,
+        sourceVersion: null,
         notes: ''
       })
       found++
@@ -253,6 +276,7 @@ export async function importModelFile(sourcePath: string): Promise<ImportResult>
       triggerWords: detection.triggerWords,
       source: 'import',
       sourceUrl: null,
+      sourceVersion: null,
       notes: ''
     })
 

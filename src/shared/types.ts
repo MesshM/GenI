@@ -35,6 +35,9 @@ export interface ModelAsset {
   triggerWords: string[]
   source: 'scan' | 'import' | 'civitai' | 'huggingface'
   sourceUrl: string | null
+  /** Id de version de Civitai, o revision de Hugging Face. Para saber si
+   *  hay una version mas nueva sin tener que volver a bajar el archivo. */
+  sourceVersion: string | null
   notes: string
   createdAt: number
 }

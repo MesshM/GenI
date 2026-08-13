@@ -144,6 +144,37 @@ export function classify(header: SafetensorsHeader, filename: string): Detection
     return { kind: 'upscale_model', architecture: 'unknown', triggerWords, reason: 'ESRGAN' }
   }
 
+  // --- Ultimo recurso: el nombre del archivo ----------------------------
+  // Arquitecturas nuevas (Qwen-Image, y las que vengan) usan sus propios
+  // nombres de tensor, distintos a los de SD/SDXL/FLUX que reconocen los
+  // bloques de arriba. Sin esto un VAE o codificador de una arquitectura
+  // asi cae en "no reconocido" y termina mal ubicado (carpeta checkpoints).
+  const lower = basename(filename).toLowerCase()
+  if (lower.includes('vae')) {
+    return {
+      kind: 'vae',
+      architecture: 'unknown',
+      triggerWords,
+      reason: 'no reconocido por tensores; el nombre del archivo sugiere VAE'
+    }
+  }
+  if (lower.includes('text_encoder') || lower.includes('clip') || lower.includes('_t5')) {
+    return {
+      kind: 'text_encoder',
+      architecture: 'unknown',
+      triggerWords,
+      reason: 'no reconocido por tensores; el nombre del archivo sugiere codificador de texto'
+    }
+  }
+  if (lower.includes('unet') || lower.includes('diffusion_model')) {
+    return {
+      kind: 'diffusion_model',
+      architecture: 'unknown',
+      triggerWords,
+      reason: 'no reconocido por tensores; el nombre del archivo sugiere modelo de difusion'
+    }
+  }
+
   return {
     kind: 'unknown',
     architecture: 'unknown',

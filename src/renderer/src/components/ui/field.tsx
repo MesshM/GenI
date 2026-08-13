@@ -150,10 +150,10 @@ export function Slider({
             max={max}
             step={step}
             onChange={(e) => onChange(clamp(Number(e.target.value)))}
-            // py-[5px] (antes 8px) baja el alto de la caja; pr-[24px] deja
-            // hueco para una columna de flechas mas ANCHA (antes angosta),
-            // que es lo que de verdad necesitaban para entrar comodas.
-            className="w-full rounded-[8px] border border-line/70 bg-white/80 py-[5px] pl-2 pr-[24px] text-right text-[12.6px] font-bold text-ink-800 outline-none focus:border-halo/50 focus:ring-2 focus:ring-halo/14 dark:bg-white/6"
+            // El input mantiene su alto de siempre (py-[8px]); lo unico que
+            // cambia es la columna de flechas de al lado, mas ancha para
+            // que ambas entren comodas sin tener que apretar el numero.
+            className="w-full rounded-[8px] border border-line/70 bg-white/80 py-[8px] pl-2 pr-[24px] text-right text-[12.6px] font-bold text-ink-800 outline-none focus:border-halo/50 focus:ring-2 focus:ring-halo/14 dark:bg-white/6"
           />
           {/* Flechas propias: las del navegador no se pueden estilar. */}
           <div className="absolute inset-y-0 right-0 flex w-[22px] flex-col overflow-hidden rounded-r-[7px] border-l border-line/50">
