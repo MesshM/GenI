@@ -35,13 +35,13 @@ export default function TopBar(): React.JSX.Element {
         <button
           onClick={() => hasLog && setShowLog((v) => !v)}
           className={cn(
-            'no-drag flex items-center gap-2 rounded-full border border-white/70 bg-white/60 px-3.5 py-1.5 text-[12px] font-bold text-ink-700 shadow-soft backdrop-blur transition-colors dark:border-white/10 dark:bg-white/6',
+            'no-drag flex items-center gap-2 rounded-full border border-white/70 bg-white/60 px-3.5 py-1.5 text-[12.6px] font-bold text-ink-700 shadow-soft backdrop-blur transition-colors dark:border-white/10 dark:bg-white/6',
             hasLog && 'hover:bg-white'
           )}
         >
           <span className={cn('h-2 w-2 rounded-full', dot)} />
           {label}
-          {hasLog && <Icon name="expand_more" className="text-[16px] text-ink-400" />}
+          {hasLog && <Icon name="expand_more" className="text-[16.8px] text-ink-400" />}
         </button>
 
         {(comfy.state === 'stopped' || comfy.state === 'error') && (
@@ -59,8 +59,8 @@ export default function TopBar(): React.JSX.Element {
         <div className="flex-1" />
 
         {update?.available && (
-          <div className="no-drag flex items-center gap-2 rounded-full border border-white/70 bg-white/70 px-3 py-1.5 text-[12px] font-bold text-ink-700 shadow-soft backdrop-blur dark:border-white/10 dark:bg-white/6">
-            <Icon name="rocket_launch" className="text-[16px] text-cobalt-600" />
+          <div className="no-drag flex items-center gap-2 rounded-full border border-white/70 bg-white/70 px-3 py-1.5 text-[12.6px] font-bold text-ink-700 shadow-soft backdrop-blur dark:border-white/10 dark:bg-white/6">
+            <Icon name="rocket_launch" className="text-[16.8px] text-cobalt-600" />
             <span>Version {update.version}</span>
             {update.downloaded ? (
               <button
@@ -84,9 +84,9 @@ export default function TopBar(): React.JSX.Element {
       </header>
 
       {showLog && hasLog && (
-        <div className="mx-6 mb-3 max-h-52 shrink-0 overflow-auto rounded-panel border border-white/70 bg-white/70 p-3 font-mono text-[11px] leading-relaxed text-ink-600 shadow-soft backdrop-blur dark:border-white/10 dark:bg-white/6">
+        <div className="mx-6 mb-3 max-h-52 shrink-0 overflow-auto rounded-panel border border-white/70 bg-white/70 p-3 font-mono text-[11.6px] leading-relaxed text-ink-600 shadow-soft backdrop-blur dark:border-white/10 dark:bg-white/6">
           {comfy.state === 'error' && (
-            <p className="mb-2 font-sans text-[12px] font-bold text-rose-text">{comfy.message}</p>
+            <p className="mb-2 font-sans text-[12.6px] font-bold text-rose-text">{comfy.message}</p>
           )}
           {comfy.log.map((line, i) => (
             <div key={i}>{line}</div>

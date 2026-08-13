@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
-import { useStore } from '../store/useStore'
+import { PARAMS_MAX, PARAMS_MIN, useStore } from '../store/useStore'
 import { Icon } from './ui/icon'
-import { Section, Select, Slider, Switch, TextArea } from './ui/field'
+import { Section, Slider, Switch, TextArea } from './ui/field'
+import { Select } from './ui/select'
+import { Resizer } from './ui/resizer'
 import { cn } from '@/lib/utils'
 
 const SAMPLERS = [
@@ -33,6 +35,9 @@ export default function ParamsPanel(): React.JSX.Element {
   const patchLora = useStore((s) => s.patchLora)
   const setView = useStore((s) => s.setView)
 
+  const width = useStore((s) => s.paramsWidth)
+  const setWidth = useStore((s) => s.setParamsWidth)
+
   const [picking, setPicking] = useState(false)
   const recipe = recipes.find((r) => r.id === recipeId)
 
@@ -50,16 +55,16 @@ export default function ParamsPanel(): React.JSX.Element {
 
   if (!recipe || !params) {
     return (
-      <aside className="w-[340px] shrink-0 p-4">
+      <aside className="shrink-0 p-4" style={{ width }}>
         <div className="glass p-6 text-center">
-          <Icon name="deployed_code" className="text-[38px] text-ink-300" />
-          <p className="mt-2 text-[13px] font-bold text-ink-700">No hay modelos instalados</p>
-          <p className="mt-1 text-[12px] leading-snug text-ink-500">
+          <Icon name="deployed_code" className="text-[39.9px] text-ink-300" />
+          <p className="mt-2 text-[13.7px] font-bold text-ink-700">No hay modelos instalados</p>
+          <p className="mt-1 text-[12.6px] leading-snug text-ink-500">
             Agrega un checkpoint desde la seccion Modelos y aparecera aca.
           </p>
           <button
             onClick={() => setView('models')}
-            className="mt-4 text-[12px] font-bold text-cobalt-600 underline"
+            className="mt-4 text-[12.6px] font-bold text-cobalt-600 underline"
           >
             Ir a Modelos
           </button>
@@ -72,8 +77,9 @@ export default function ParamsPanel(): React.JSX.Element {
   const isEdit = recipe.architecture === 'flux-kontext'
 
   return (
-    <aside className="w-[340px] shrink-0 p-4 pr-2">
-      <div className="glass scroll h-full p-5">
+    <>
+      <aside className="shrink-0 py-4 pl-4" style={{ width }}>
+        <div className="glass scroll h-full p-5">
         {/* 1. Modelo */}
         <Section title="Modelo">
           <Select
@@ -81,7 +87,7 @@ export default function ParamsPanel(): React.JSX.Element {
             options={recipes.map((r) => ({ value: r.id, label: r.name }))}
             onChange={chooseRecipe}
           />
-          <p className="-mt-2 text-[11px] leading-snug text-ink-500">{recipe.description}</p>
+          <p className="-mt-2 text-[11.6px] leading-snug text-ink-500">{recipe.description}</p>
         </Section>
 
         {/* 2. LoRAs, justo debajo del modelo */}
@@ -91,9 +97,9 @@ export default function ParamsPanel(): React.JSX.Element {
             <button
               onClick={() => setPicking((v) => !v)}
               disabled={availableLoras.length === 0}
-              className="flex items-center gap-1 rounded-chip border border-line/70 bg-white/70 px-2 py-1 text-[11px] font-bold text-cobalt-600 shadow-soft transition-colors hover:bg-white disabled:opacity-40 dark:bg-white/6 dark:hover:bg-white/10"
+              className="flex items-center gap-1 rounded-chip border border-line/70 bg-white/70 px-2 py-1 text-[11.6px] font-bold text-cobalt-600 shadow-soft transition-colors hover:bg-white disabled:opacity-40 dark:bg-white/6 dark:hover:bg-white/10"
             >
-              <Icon name="add" className="text-[14px]" />
+              <Icon name="add" className="text-[14.7px]" />
               Agregar
             </button>
           }
@@ -109,14 +115,14 @@ export default function ParamsPanel(): React.JSX.Element {
                   }}
                   className="flex w-full items-center gap-2 rounded-chip px-2 py-1.5 text-left transition-colors hover:bg-tint/12"
                 >
-                  <Icon name="layers" className="shrink-0 text-[16px] text-cobalt-500" />
-                  <span className="min-w-0 flex-1 truncate text-[12px] font-semibold text-ink-800">
+                  <Icon name="layers" className="shrink-0 text-[16.8px] text-cobalt-500" />
+                  <span className="min-w-0 flex-1 truncate text-[12.6px] font-semibold text-ink-800">
                     {m.filename.replace(/\.[^.]+$/, '')}
                   </span>
                   {m.triggerWords.length > 0 && (
                     <Icon
                       name="label"
-                      className="shrink-0 text-[14px] text-ink-400"
+                      className="shrink-0 text-[14.7px] text-ink-400"
                       title={`Trigger: ${m.triggerWords.join(', ')}`}
                     />
                   )}
@@ -126,7 +132,7 @@ export default function ParamsPanel(): React.JSX.Element {
           )}
 
           {params.loras.length === 0 && !picking && (
-            <p className="rounded-box border border-dashed border-line/70 px-3 py-4 text-center text-[11px] leading-snug text-ink-400">
+            <p className="rounded-box border border-dashed border-line/70 px-3 py-4 text-center text-[11.6px] leading-snug text-ink-400">
               {availableLoras.length === 0
                 ? 'No hay LoRAs compatibles instaladas'
                 : 'Sin LoRAs. Agregalas con el boton de arriba.'}
@@ -155,12 +161,12 @@ export default function ParamsPanel(): React.JSX.Element {
                       name={lora.enabled ? 'check_circle' : 'radio_button_unchecked'}
                       filled={lora.enabled}
                       className={cn(
-                        'text-[18px]',
+                        'text-[18.9px]',
                         lora.enabled ? 'text-cobalt-600' : 'text-ink-300'
                       )}
                     />
                   </button>
-                  <span className="min-w-0 flex-1 truncate text-[12px] font-bold text-ink-800">
+                  <span className="min-w-0 flex-1 truncate text-[12.6px] font-bold text-ink-800">
                     {lora.label}
                   </span>
                   <button
@@ -168,7 +174,7 @@ export default function ParamsPanel(): React.JSX.Element {
                     title="Quitar"
                     className="shrink-0 text-ink-300 transition-colors hover:text-rose"
                   >
-                    <Icon name="close" className="text-[16px]" />
+                    <Icon name="close" className="text-[16.8px]" />
                   </button>
                 </div>
 
@@ -187,7 +193,7 @@ export default function ParamsPanel(): React.JSX.Element {
                     {/* Trigger words: se anteponen al prompt al generar. */}
                     {model && model.triggerWords.length > 0 && (
                       <div className="mt-1.5">
-                        <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-ink-400">
+                        <p className="mb-1 text-[10.5px] font-bold uppercase tracking-wider text-ink-400">
                           Trigger words
                         </p>
                         <div className="flex flex-wrap gap-1">
@@ -207,7 +213,7 @@ export default function ParamsPanel(): React.JSX.Element {
                                     : 'Clic para agregarla al prompt.'
                                 }
                                 className={cn(
-                                  'rounded-full px-2 py-0.5 text-[10px] font-bold transition-colors',
+                                  'rounded-full px-2 py-0.5 text-[10.5px] font-bold transition-colors',
                                   active
                                     ? 'bg-cta text-white shadow-blue'
                                     : 'border border-line/70 bg-white/60 text-ink-500 hover:text-cobalt-600 dark:bg-white/5'
@@ -250,14 +256,14 @@ export default function ParamsPanel(): React.JSX.Element {
                     key={r.label}
                     onClick={() => patchParams({ width: r.width, height: r.height })}
                     className={cn(
-                      'rounded-chip border px-2 py-1.5 text-left text-[11px] font-bold transition-colors',
+                      'rounded-chip border px-2 py-1.5 text-left text-[11.6px] font-bold transition-colors',
                       active
                         ? 'border-cobalt-500/60 bg-tint/16 text-cobalt-700'
                         : 'border-line/60 bg-white/50 text-ink-600 hover:bg-white dark:bg-white/5 dark:hover:bg-white/10'
                     )}
                   >
                     <span className="block truncate">{r.label}</span>
-                    <span className="text-[10px] font-semibold text-ink-400">
+                    <span className="text-[10.5px] font-semibold text-ink-400">
                       {r.width}×{r.height}
                     </span>
                   </button>
@@ -355,7 +361,16 @@ export default function ParamsPanel(): React.JSX.Element {
             onChange={(batchSize) => patchParams({ batchSize })}
           />
         </Section>
-      </div>
-    </aside>
+        </div>
+      </aside>
+
+      <Resizer
+        width={width}
+        onResize={setWidth}
+        min={PARAMS_MIN}
+        max={PARAMS_MAX}
+        side="right"
+      />
+    </>
   )
 }

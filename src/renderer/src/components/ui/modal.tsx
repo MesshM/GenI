@@ -174,7 +174,7 @@ export function Modal({
             >
               {(title || showClose) && (
                 <div className="flex shrink-0 items-center gap-3 border-b border-line/45 py-4 pl-5 pr-[18px]">
-                  <span className="min-w-0 flex-1 text-[17px] font-extrabold tracking-[-0.02em] text-ink-900">
+                  <span className="min-w-0 flex-1 text-[17.9px] font-extrabold tracking-[-0.02em] text-ink-900">
                     {title}
                   </span>
                   {showClose && (

@@ -16,6 +16,44 @@ import type {
 
 export type View = 'chat' | 'models'
 
+/** Limites de los paneles redimensionables. */
+export const SIDEBAR_MIN = 210
+export const SIDEBAR_MAX = 420
+export const PARAMS_MIN = 280
+export const PARAMS_MAX = 560
+
+// El ancho de los paneles es preferencia de interfaz, no dato de la app:
+// va en localStorage y no en la base ni en los ajustes sincronizados.
+const WIDTH_KEY = 'geni:widths'
+
+function loadWidths(): { sidebar: number; params: number } {
+  try {
+    const raw = localStorage.getItem(WIDTH_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw) as { sidebar?: number; params?: number }
+      return {
+        sidebar: clamp(parsed.sidebar ?? 262, SIDEBAR_MIN, SIDEBAR_MAX),
+        params: clamp(parsed.params ?? 340, PARAMS_MIN, PARAMS_MAX)
+      }
+    }
+  } catch {
+    // preferencia corrupta: se vuelve a los valores por defecto
+  }
+  return { sidebar: 262, params: 340 }
+}
+
+function clamp(n: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, n))
+}
+
+function persistWidths(sidebar: number, params: number): void {
+  try {
+    localStorage.setItem(WIDTH_KEY, JSON.stringify({ sidebar, params }))
+  } catch {
+    // sin localStorage la app funciona igual, solo no recuerda el ancho
+  }
+}
+
 interface State {
   ready: boolean
   view: View
@@ -36,6 +74,11 @@ interface State {
   negative: string
   params: GenerationParams | null
   recipeId: string | null
+
+  sidebarWidth: number
+  paramsWidth: number
+  setSidebarWidth: (w: number) => void
+  setParamsWidth: (w: number) => void
 
   setView: (v: View) => void
   bootstrap: () => Promise<void>
@@ -80,6 +123,19 @@ export const useStore = create<State>((set, get) => ({
   negative: '',
   params: null,
   recipeId: null,
+
+  sidebarWidth: loadWidths().sidebar,
+  paramsWidth: loadWidths().params,
+
+  setSidebarWidth(w) {
+    set({ sidebarWidth: w })
+    persistWidths(w, get().paramsWidth)
+  },
+
+  setParamsWidth(w) {
+    set({ paramsWidth: w })
+    persistWidths(get().sidebarWidth, w)
+  },
 
   setView: (view) => set({ view }),
 

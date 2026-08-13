@@ -34,12 +34,12 @@ export default function ChatPanel(): React.JSX.Element {
         {messages.length === 0 ? (
           <div className="mx-auto mt-24 max-w-md animate-fade-up text-center">
             <span className="grid mx-auto h-14 w-14 place-items-center rounded-panel bg-white/70 shadow-lift dark:bg-white/6">
-              <Icon name="auto_awesome" filled className="text-[28px] text-cobalt-500" />
+              <Icon name="auto_awesome" filled className="text-[29.4px] text-cobalt-500" />
             </span>
-            <p className="mt-4 text-[17px] font-extrabold tracking-tight text-ink-800">
+            <p className="mt-4 text-[17.9px] font-extrabold tracking-tight text-ink-800">
               Escribi un prompt para empezar
             </p>
-            <p className="mt-1.5 text-[13px] leading-snug text-ink-500">
+            <p className="mt-1.5 text-[13.7px] leading-snug text-ink-500">
               Los parametros de la izquierda se aplican a cada generacion. Podes cambiarlos entre
               mensaje y mensaje sin perder la conversacion.
             </p>
@@ -69,10 +69,10 @@ export default function ChatPanel(): React.JSX.Element {
                   : 'Describi la imagen... (Enter para enviar, Shift+Enter para salto de linea)'
             }
             disabled={!ready}
-            className="w-full resize-none bg-transparent px-2 py-1.5 text-[14px] leading-relaxed text-ink-800 outline-none placeholder:text-ink-400 disabled:opacity-50"
+            className="w-full resize-none bg-transparent px-2 py-1.5 text-[14.7px] leading-relaxed text-ink-800 outline-none placeholder:text-ink-400 disabled:opacity-50"
           />
           <div className="flex items-center justify-between gap-2 px-1">
-            <span className="text-[11px] font-semibold text-ink-400">
+            <span className="text-[11.6px] font-semibold text-ink-400">
               {prompt.trim().split(/\s+/).filter(Boolean).length} palabras
             </span>
             <Button

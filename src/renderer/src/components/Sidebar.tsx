@@ -13,7 +13,7 @@ const NAV: { view: View; icon: string; label: string }[] = [
 
 /** Cada boton del sidebar es una pildora. */
 const PILL =
-  'flex h-[46px] items-center rounded-full pl-[11px] pr-4 text-[14px] font-bold transition-[background,color,box-shadow] duration-200'
+  'flex h-[46px] items-center rounded-full pl-[11px] pr-4 text-[14.7px] font-bold transition-[background,color,box-shadow] duration-200'
 
 /** Marco lateral plano: navegacion, historial de conversaciones y ajustes. */
 export default function Sidebar(): React.JSX.Element {
@@ -38,13 +38,15 @@ export default function Sidebar(): React.JSX.Element {
     setEditing(null)
   }
 
+  const width = useStore((s) => s.sidebarWidth)
+
   return (
-    <aside className="flex w-[262px] shrink-0 flex-col px-3 py-4">
+    <aside className="flex shrink-0 flex-col px-3 py-4" style={{ width }}>
       <div className="mb-5 flex h-12 items-center pl-[9px]">
         <span className="grid h-[38px] w-[38px] shrink-0 place-items-center rounded-full bg-cta shadow-blue">
-          <Icon name="brush" filled className="text-[20px]" />
+          <Icon name="brush" filled className="text-[21px]" />
         </span>
-        <span className="ml-2.5 bg-wordmark bg-clip-text text-[19px] font-extrabold tracking-tight text-transparent">
+        <span className="ml-2.5 bg-wordmark bg-clip-text text-[20px] font-extrabold tracking-tight text-transparent">
           GenI
         </span>
       </div>
@@ -64,11 +66,11 @@ export default function Sidebar(): React.JSX.Element {
               )}
             >
               <span className="grid h-6 w-6 shrink-0 place-items-center">
-                <Icon name={item.icon} filled={active} className="text-[21px]" />
+                <Icon name={item.icon} filled={active} className="text-[22.1px]" />
               </span>
               <span className="ml-3">{item.label}</span>
               {item.view === 'models' && models.length > 0 && (
-                <span className="ml-auto rounded-full bg-tint/16 px-2 py-0.5 text-[11px] font-extrabold text-cobalt-600">
+                <span className="ml-auto rounded-full bg-tint/16 px-2 py-0.5 text-[11.6px] font-extrabold text-cobalt-600">
                   {models.length}
                 </span>
               )}
@@ -79,7 +81,7 @@ export default function Sidebar(): React.JSX.Element {
 
       <div className="mt-5 flex min-h-0 flex-1 flex-col">
         <div className="mb-2 flex items-center justify-between px-2">
-          <span className="text-[11px] font-extrabold uppercase tracking-wider text-ink-400">
+          <span className="text-[11.6px] font-extrabold uppercase tracking-wider text-ink-400">
             Conversaciones
           </span>
           <button
@@ -87,13 +89,13 @@ export default function Sidebar(): React.JSX.Element {
             title="Nueva conversacion"
             className="grid h-6 w-6 place-items-center rounded-full text-ink-400 transition-colors hover:bg-white/60 hover:text-cobalt-600 dark:hover:bg-white/8"
           >
-            <Icon name="add" className="text-[17px]" />
+            <Icon name="add" className="text-[17.9px]" />
           </button>
         </div>
 
         <div className="scroll -mx-1 flex-1 px-1">
           {conversations.length === 0 && (
-            <p className="px-2 py-6 text-center text-[11px] leading-snug text-ink-400">
+            <p className="px-2 py-6 text-center text-[11.6px] leading-snug text-ink-400">
               Todavia no hay conversaciones
             </p>
           )}
@@ -125,7 +127,7 @@ export default function Sidebar(): React.JSX.Element {
                     />
                   ) : (
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-chip bg-fog/25">
-                      <Icon name="image" className="text-[16px] text-ink-300" />
+                      <Icon name="image" className="text-[16.8px] text-ink-300" />
                     </span>
                   )}
 
@@ -141,19 +143,19 @@ export default function Sidebar(): React.JSX.Element {
                           if (e.key === 'Escape') setEditing(null)
                         }}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-full rounded border border-cobalt-500 bg-white px-1 text-[12px] text-ink-900 outline-none dark:bg-white/10"
+                        className="w-full rounded border border-cobalt-500 bg-white px-1 text-[12.6px] text-ink-900 outline-none dark:bg-white/10"
                       />
                     ) : (
                       <p
                         className={cn(
-                          'truncate text-[12px] font-bold',
+                          'truncate text-[12.6px] font-bold',
                           active ? 'text-cobalt-700' : 'text-ink-600'
                         )}
                       >
                         {c.title}
                       </p>
                     )}
-                    <p className="truncate text-[10px] text-ink-400">
+                    <p className="truncate text-[10.5px] text-ink-400">
                       {recipe?.name ?? 'Modelo no disponible'}
                     </p>
                   </div>
@@ -168,7 +170,7 @@ export default function Sidebar(): React.JSX.Element {
                       title="Renombrar"
                       className="grid h-6 w-6 place-items-center rounded-full text-ink-400 hover:text-cobalt-600"
                     >
-                      <Icon name="edit" className="text-[14px]" />
+                      <Icon name="edit" className="text-[14.7px]" />
                     </button>
                     <button
                       onClick={(e) => {
@@ -178,7 +180,7 @@ export default function Sidebar(): React.JSX.Element {
                       title="Borrar"
                       className="grid h-6 w-6 place-items-center rounded-full text-ink-400 hover:text-rose"
                     >
-                      <Icon name="delete" className="text-[14px]" />
+                      <Icon name="delete" className="text-[14.7px]" />
                     </button>
                   </div>
                 </div>
@@ -198,7 +200,7 @@ export default function Sidebar(): React.JSX.Element {
             )}
           >
             <span className="grid h-6 w-6 shrink-0 place-items-center">
-              <Icon name="settings" className="text-[21px]" />
+              <Icon name="settings" className="text-[22.1px]" />
             </span>
             <span className="ml-3">Ajustes</span>
           </div>
@@ -210,8 +212,8 @@ export default function Sidebar(): React.JSX.Element {
       {confirmDelete && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-ink-900/25 p-6 backdrop-blur-sm">
           <div className="glass-strong w-full max-w-sm rounded-panel p-5 shadow-deep">
-            <h3 className="text-[15px] font-extrabold text-ink-900">Borrar conversacion</h3>
-            <p className="mt-2 text-[13px] leading-snug text-ink-600">
+            <h3 className="text-[15.8px] font-extrabold text-ink-900">Borrar conversacion</h3>
+            <p className="mt-2 text-[13.7px] leading-snug text-ink-600">
               Se borra la conversacion y su historial. Las imagenes ya generadas siguen en la
               carpeta de salida de ComfyUI.
             </p>

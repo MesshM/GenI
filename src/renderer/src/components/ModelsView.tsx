@@ -111,8 +111,8 @@ export default function ModelsView(): React.JSX.Element {
       onDrop={(e) => void onDrop(e)}
     >
       <div className="mx-auto max-w-4xl">
-        <h1 className="mb-1 text-[22px] font-extrabold tracking-tight text-ink-900">Modelos</h1>
-        <p className="mb-5 text-[13px] text-ink-500">
+        <h1 className="mb-1 text-[23.1px] font-extrabold tracking-tight text-ink-900">Modelos</h1>
+        <p className="mb-5 text-[13.7px] text-ink-500">
           Arrastra archivos a esta ventana o pega un enlace. La app lee la cabecera del archivo
           para saber que es y lo guarda en la carpeta correcta.
         </p>
@@ -128,12 +128,12 @@ export default function ModelsView(): React.JSX.Element {
         >
           <Icon
             name={dragging ? 'file_download' : 'cloud_upload'}
-            className="text-[40px] text-cobalt-500"
+            className="text-[42px] text-cobalt-500"
           />
-          <p className="mt-1.5 text-[14px] font-bold text-ink-800">
+          <p className="mt-1.5 text-[14.7px] font-bold text-ink-800">
             {dragging ? 'Solta los archivos' : 'Arrastra tus .safetensors aca'}
           </p>
-          <p className="mt-1 text-[12px] text-ink-500">
+          <p className="mt-1 text-[12.6px] text-ink-500">
             Checkpoints, LoRAs, VAE, codificadores... se detectan solos.
           </p>
           <Button
@@ -162,25 +162,25 @@ export default function ModelsView(): React.JSX.Element {
         {/* Descarga por URL */}
         <div className="mb-4 rounded-panel border border-white/70 bg-white/55 p-4 shadow-soft backdrop-blur dark:border-white/10 dark:bg-white/6">
           <div className="flex items-center gap-2">
-            <Icon name="link" className="text-[20px] text-cobalt-500" />
+            <Icon name="link" className="text-[21px] text-cobalt-500" />
             <input
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && void startDownload()}
               placeholder="Pega un enlace de Civitai o Hugging Face"
-              className="min-w-0 flex-1 rounded-chip border border-line/70 bg-white/80 px-3 py-2 text-[13px] text-ink-800 outline-none focus:border-halo/50 focus:ring-4 focus:ring-halo/14 dark:bg-white/6"
+              className="min-w-0 flex-1 rounded-chip border border-line/70 bg-white/80 px-3 py-2 text-[13.7px] text-ink-800 outline-none focus:border-halo/50 focus:ring-4 focus:ring-halo/14 dark:bg-white/6"
             />
             <Button size="sm" icon="download" onClick={() => void startDownload()}>
               Descargar
             </Button>
           </div>
-          {urlError && <p className="mt-2 text-[12px] font-semibold text-rose-text">{urlError}</p>}
+          {urlError && <p className="mt-2 text-[12.6px] font-semibold text-rose-text">{urlError}</p>}
 
           {active.map((job) => {
             const pct = job.totalBytes ? Math.round((job.receivedBytes / job.totalBytes) * 100) : 0
             return (
               <div key={job.id} className="mt-3 rounded-box bg-white/70 p-2.5 dark:bg-white/6">
-                <div className="mb-1 flex items-center justify-between gap-2 text-[12px]">
+                <div className="mb-1 flex items-center justify-between gap-2 text-[12.6px]">
                   <span className="min-w-0 truncate font-bold text-ink-800">
                     {job.filename || 'Resolviendo enlace...'}
                   </span>
@@ -198,7 +198,7 @@ export default function ModelsView(): React.JSX.Element {
                 </div>
                 <button
                   onClick={() => void window.geni.models.cancelDownload(job.id)}
-                  className="mt-1.5 text-[11px] font-semibold text-ink-400 underline hover:text-rose"
+                  className="mt-1.5 text-[11.6px] font-semibold text-ink-400 underline hover:text-rose"
                 >
                   Cancelar
                 </button>
@@ -209,7 +209,7 @@ export default function ModelsView(): React.JSX.Element {
           {downloads
             .filter((d) => d.state === 'error')
             .map((job) => (
-              <p key={job.id} className="mt-2 text-[12px] font-semibold text-rose-text">
+              <p key={job.id} className="mt-2 text-[12.6px] font-semibold text-rose-text">
                 {job.filename || job.url}: {job.error}
               </p>
             ))}
@@ -219,11 +219,11 @@ export default function ModelsView(): React.JSX.Element {
         {results.length > 0 && (
           <div className="mb-4 rounded-panel border border-white/70 bg-white/55 p-3 shadow-soft dark:border-white/10 dark:bg-white/6">
             {results.map((r, i) => (
-              <div key={i} className="flex items-start gap-2 py-1 text-[12px]">
+              <div key={i} className="flex items-start gap-2 py-1 text-[12.6px]">
                 <Icon
                   name={r.ok ? 'check_circle' : 'error'}
                   filled
-                  className={cn('mt-px text-[16px]', r.ok ? 'text-green' : 'text-rose')}
+                  className={cn('mt-px text-[16.8px]', r.ok ? 'text-green' : 'text-rose')}
                 />
                 <span className="min-w-0 flex-1">
                   <span className="font-bold text-ink-800">{r.filename}</span>{' '}
@@ -239,7 +239,7 @@ export default function ModelsView(): React.JSX.Element {
             ))}
             <button
               onClick={() => setResults([])}
-              className="mt-1 text-[11px] font-semibold text-ink-400 underline"
+              className="mt-1 text-[11.6px] font-semibold text-ink-400 underline"
             >
               Ocultar
             </button>
@@ -248,7 +248,7 @@ export default function ModelsView(): React.JSX.Element {
 
         {/* Catalogo */}
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-[13px] font-extrabold text-ink-700">
+          <h2 className="text-[13.7px] font-extrabold text-ink-700">
             Instalados · {models.length}
           </h2>
           <Button
@@ -268,8 +268,8 @@ export default function ModelsView(): React.JSX.Element {
 
         {grouped.map((group) => (
           <section key={group.kind} className="mb-5">
-            <h3 className="mb-2 flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-ink-500">
-              <Icon name={KIND_ICON[group.kind]} className="text-[15px]" />
+            <h3 className="mb-2 flex items-center gap-1.5 text-[11.6px] font-extrabold uppercase tracking-wider text-ink-500">
+              <Icon name={KIND_ICON[group.kind]} className="text-[15.8px]" />
               {KIND_LABEL[group.kind]}
               <span className="text-ink-300">· {group.items.length}</span>
             </h3>
@@ -282,11 +282,11 @@ export default function ModelsView(): React.JSX.Element {
                 >
                   <Icon
                     name={KIND_ICON[m.kind]}
-                    className="shrink-0 text-[20px] text-cobalt-500"
+                    className="shrink-0 text-[21px] text-cobalt-500"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-bold text-ink-800">{m.filename}</p>
-                    <p className="flex flex-wrap items-center gap-1.5 text-[11px] text-ink-500">
+                    <p className="truncate text-[13.7px] font-bold text-ink-800">{m.filename}</p>
+                    <p className="flex flex-wrap items-center gap-1.5 text-[11.6px] text-ink-500">
                       <span>{formatBytes(m.sizeBytes)}</span>
                       {m.architecture !== 'unknown' && (
                         <span className="rounded-full bg-tint/16 px-1.5 py-px font-bold text-cobalt-600">
@@ -309,7 +309,7 @@ export default function ModelsView(): React.JSX.Element {
                     title="Eliminar del disco"
                     className="shrink-0 rounded-chip p-1.5 text-ink-300 opacity-0 transition-all hover:bg-rose-bg hover:text-rose group-hover:opacity-100"
                   >
-                    <Icon name="delete" className="text-[18px]" />
+                    <Icon name="delete" className="text-[18.9px]" />
                   </button>
                 </div>
               ))}
@@ -318,7 +318,7 @@ export default function ModelsView(): React.JSX.Element {
         ))}
 
         {models.length === 0 && (
-          <p className="rounded-panel border border-dashed border-line/70 px-4 py-8 text-center text-[13px] text-ink-400">
+          <p className="rounded-panel border border-dashed border-line/70 px-4 py-8 text-center text-[13.7px] text-ink-400">
             Todavia no hay modelos. Arrastra uno o pega un enlace.
           </p>
         )}
@@ -327,8 +327,8 @@ export default function ModelsView(): React.JSX.Element {
       {target && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-ink-900/25 p-6 backdrop-blur-sm">
           <div className="glass-strong w-full max-w-sm rounded-panel p-5 shadow-deep">
-            <h3 className="text-[15px] font-extrabold text-ink-900">Eliminar modelo</h3>
-            <p className="mt-2 text-[13px] leading-snug text-ink-600">
+            <h3 className="text-[15.8px] font-extrabold text-ink-900">Eliminar modelo</h3>
+            <p className="mt-2 text-[13.7px] leading-snug text-ink-600">
               Se borra <span className="font-bold">{target.filename}</span> del disco. Esta accion
               no se puede deshacer y las recetas que lo usen dejaran de estar disponibles.
             </p>

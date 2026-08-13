@@ -30,9 +30,9 @@ const VARIANT: Record<ButtonVariant, string> = {
 }
 
 const SIZE: Record<ButtonSize, string> = {
-  sm: 'px-[13px] py-2 text-[13px] [&_.material-symbols-rounded]:text-[18px]',
-  md: 'px-[18px] py-[11px] text-[14px] [&_.material-symbols-rounded]:text-[20px]',
-  lg: 'px-[22px] py-[13px] text-[15px] [&_.material-symbols-rounded]:text-[20px]'
+  sm: 'px-[13px] py-2 text-[13.7px] [&_.material-symbols-rounded]:text-[18.9px]',
+  md: 'px-[18px] py-[11px] text-[14.7px] [&_.material-symbols-rounded]:text-[21px]',
+  lg: 'px-[22px] py-[13px] text-[15.8px] [&_.material-symbols-rounded]:text-[21px]'
 }
 
 const ICON_ONLY: Record<ButtonSize, string> = {
