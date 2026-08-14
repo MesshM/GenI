@@ -67,8 +67,19 @@ export function Select<T extends string>({
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') setOpen(false)
     }
-    // Al hacer scroll la posicion medida deja de valer: se cierra.
-    const onScroll = (): void => setOpen(false)
+    // Al hacer scroll el panel de atras, la posicion medida deja de valer y
+    // la lista quedaria flotando en el lugar equivocado: se cierra. Pero si
+    // el scroll pasa DENTRO de la lista (tiene su propio scroll cuando hay
+    // muchas opciones) no hay nada que recalcular, y cerrarla ahi hacia
+    // imposible llegar a las ultimas opciones.
+    const onScroll = (e: Event): void => {
+      const target = e.target
+      // El listener de resize tambien entra aca y su target es window, que
+      // no es un Node: el instanceof lo descarta y la lista se cierra, que
+      // es lo correcto para un cambio de tamaño.
+      if (target instanceof Node && listRef.current?.contains(target)) return
+      setOpen(false)
+    }
 
     document.addEventListener('pointerdown', onPointerDown)
     document.addEventListener('keydown', onKey)

@@ -4,8 +4,9 @@ import { Icon } from './ui/icon'
 import { Button } from './ui/button'
 import { ImageWithSkeleton } from './ui/image'
 import { Modal, ModalRoot, ModalTrigger } from './ui/modal'
-import { Slider, TextField } from './ui/field'
+import { TextArea, TextField } from './ui/field'
 import { Select } from './ui/select'
+import { ParamFields } from './ParamFields'
 import WorkflowImport from './WorkflowImport'
 import { cn } from '@/lib/utils'
 
@@ -31,13 +32,13 @@ export default function PresetsView(): React.JSX.Element {
   const negative = useStore((s) => s.negative)
   const chooseRecipe = useStore((s) => s.chooseRecipe)
   const patchParams = useStore((s) => s.patchParams)
+  const setNegative = useStore((s) => s.setNegative)
   const createPreset = useStore((s) => s.createPreset)
   const removePreset = useStore((s) => s.removePreset)
 
   const activeLoras = params?.loras.filter((l) => l.enabled) ?? []
 
   const [open, setOpen] = useState(false)
-  const [importing, setImporting] = useState(false)
   const [name, setName] = useState('')
   const [imagePath, setImagePath] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -85,9 +86,7 @@ export default function PresetsView(): React.JSX.Element {
           </div>
 
           <div className="flex items-center gap-2">
-          <Button variant="secondary" icon="upload_file" onClick={() => setImporting(true)}>
-            Importar workflow
-          </Button>
+          <WorkflowImport />
 
           <ModalRoot isOpen={open} onOpenChange={setOpen}>
             <ModalTrigger>
@@ -131,51 +130,30 @@ export default function PresetsView(): React.JSX.Element {
 
               {params && currentRecipe && (
                 <>
-                  {currentRecipe.resolutions.length > 0 && (
-                    <Select
-                      label="Resolucion"
-                      value={`${params.width}x${params.height}`}
-                      options={currentRecipe.resolutions.map((r) => ({
-                        value: `${r.width}x${r.height}`,
-                        label: `${r.label} · ${r.width}×${r.height}`
-                      }))}
-                      onChange={(v) => {
-                        const [w, h] = v.split('x').map(Number)
-                        patchParams({ width: w, height: h })
-                      }}
-                    />
-                  )}
+                  {/* Los mismos controles que la vista Generar, no un
+                      resumen: el preset guarda todo esto, asi que hay que
+                      poder verlo y tocarlo antes de guardar. */}
+                  <ParamFields
+                    recipe={currentRecipe}
+                    params={params}
+                    patchParams={patchParams}
+                    hideResolution={currentRecipe.architecture === 'flux-kontext'}
+                    resolutionColumns={2}
+                  />
 
-                  <div className="grid grid-cols-2 gap-x-4">
-                    <Slider
-                      label="Pasos"
-                      value={params.steps}
-                      min={1}
-                      max={80}
-                      step={1}
-                      onChange={(steps) => patchParams({ steps })}
-                    />
-                    <Slider
-                      label="CFG"
-                      value={params.cfg}
-                      min={1}
-                      max={15}
-                      step={0.5}
-                      onChange={(cfg) => patchParams({ cfg })}
-                    />
-                  </div>
+                  <TextArea
+                    label="Prompt negativo"
+                    value={negative}
+                    onChange={(e) => setNegative(e.target.value)}
+                    rows={2}
+                    placeholder="worst quality, bad anatomy..."
+                  />
 
                   <div className="mb-4 rounded-box border border-line/50 bg-white/50 px-3 py-2.5 dark:bg-white/5">
                     <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-ink-400">
-                      Tambien se guarda
+                      LoRAs incluidas
                     </p>
                     <div className="flex flex-wrap gap-1.5">
-                      <Tag>{params.samplerName}</Tag>
-                      <Tag>{params.scheduler}</Tag>
-                      <Tag>{params.randomSeed ? 'semilla al azar' : `semilla ${params.seed}`}</Tag>
-                      <Tag>
-                        {params.batchSize} {params.batchSize === 1 ? 'imagen' : 'imagenes'}
-                      </Tag>
                       {activeLoras.length > 0 ? (
                         activeLoras.map((l) => (
                           <Tag key={l.modelId}>
@@ -183,12 +161,11 @@ export default function PresetsView(): React.JSX.Element {
                           </Tag>
                         ))
                       ) : (
-                        <Tag muted>sin LoRAs</Tag>
+                        <Tag muted>ninguna</Tag>
                       )}
-                      {negative ? <Tag>negativo ({negative.length} car.)</Tag> : <Tag muted>sin negativo</Tag>}
                     </div>
                     <p className="mt-2 text-[11px] leading-snug text-ink-400">
-                      Las LoRAs y el prompt negativo se ajustan desde la vista Generar.
+                      Las LoRAs se agregan y se quitan desde la vista Generar.
                     </p>
                   </div>
                 </>
@@ -242,8 +219,6 @@ export default function PresetsView(): React.JSX.Element {
           </ModalRoot>
           </div>
         </div>
-
-        {importing && <WorkflowImport onClose={() => setImporting(false)} />}
 
         {presets.length === 0 ? (
           <p className="rounded-panel border border-dashed border-line/70 px-4 py-10 text-center text-[13px] text-ink-400">

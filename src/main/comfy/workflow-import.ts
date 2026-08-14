@@ -71,11 +71,16 @@ const MODEL_FILE = /\.(safetensors|ckpt|pt|pth|gguf|sft|bin)$/i
 
 /** Que modelos pide el workflow, y cuales de esos ya estan instalados. */
 export async function inspectWorkflowFile(path: string): Promise<WorkflowReport> {
+  return inspectWorkflowText(await readFile(path, 'utf8'))
+}
+
+/** Igual que el anterior pero con el JSON pegado a mano o soltado encima. */
+export function inspectWorkflowText(text: string): WorkflowReport {
   let parsed: unknown
   try {
-    parsed = JSON.parse(await readFile(path, 'utf8'))
+    parsed = JSON.parse(text)
   } catch {
-    throw new Error('Ese archivo no es un JSON valido')
+    throw new Error('Eso no es un JSON valido')
   }
 
   const { workflow, uiNodes } = toApiFormat(parsed)

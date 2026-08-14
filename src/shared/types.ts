@@ -333,6 +333,8 @@ export interface GenIApi {
   workflows: {
     /** Abre un .json de ComfyUI y dice que modelos le faltan. */
     pickAndInspect(): Promise<WorkflowReport | null>
+    /** Lo mismo pero con el JSON pegado o soltado en la ventana. */
+    inspectText(text: string): Promise<WorkflowReport>
   }
   install: {
     /** Que hay en la maquina antes de instalar: placa, Python y ruta sugerida. */

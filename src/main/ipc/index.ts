@@ -13,7 +13,7 @@ import {
   detectGpuVendor,
   detectPython
 } from '../comfy/installer'
-import { inspectWorkflowFile } from '../comfy/workflow-import'
+import { inspectWorkflowFile, inspectWorkflowText } from '../comfy/workflow-import'
 import { translateEsToEn } from '../translate/translate'
 import { listRecipes } from '../comfy/recipes'
 import {
@@ -24,7 +24,13 @@ import {
   updateModel
 } from '../models/manager'
 import { downloader } from '../models/download'
-import { createPreset, deletePreset, isImageFile, listPresets } from '../presets/manager'
+import {
+  allowPickedImage,
+  createPreset,
+  deletePreset,
+  isImageFile,
+  listPresets
+} from '../presets/manager'
 import {
   addToCollection,
   collectionsForGeneration,
@@ -205,6 +211,11 @@ export function registerIpc(getWindow: () => BrowserWindow | null): void {
     return inspectWorkflowFile(picked.filePaths[0])
   })
 
+  ipcMain.handle(CH.workflowInspectText, (_e, text: unknown) =>
+    // 4 MB de tope: un workflow grande ronda los 200 KB, con eso sobra.
+    inspectWorkflowText(asString(text, 'text', 4_000_000))
+  )
+
   // --- instalacion de ComfyUI desde cero
   ipcMain.handle(CH.installDetectEnv, async () => {
     const [gpu, python, suggestedDir] = await Promise.all([
@@ -274,6 +285,9 @@ export function registerIpc(getWindow: () => BrowserWindow | null): void {
 
     const path = picked.filePaths[0]
     if (!(await isImageFile(path))) throw new Error('Ese archivo no parece una imagen valida')
+    // Habilita servirla por geni-file:// para poder previsualizarla antes
+    // de guardar el preset, que es cuando recien se copia a la carpeta.
+    allowPickedImage(path)
     return path
   })
 

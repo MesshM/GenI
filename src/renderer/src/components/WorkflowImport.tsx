@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useStore } from '../store/useStore'
 import { Icon } from './ui/icon'
 import { Button } from './ui/button'
-import { Modal, ModalRoot } from './ui/modal'
-import { TextField } from './ui/field'
+import { Modal, ModalRoot, ModalTrigger } from './ui/modal'
+import { TextArea, TextField } from './ui/field'
 import { cn } from '@/lib/utils'
 import type { WorkflowReport } from '@shared/types'
 
@@ -27,12 +27,15 @@ const KIND_LABEL: Record<string, string> = {
  * salio, asi que no hay forma de adivinar la URL. Lo que si se puede es
  * decir exactamente que falta, que es la parte tediosa de hacer a mano.
  */
-export default function WorkflowImport({ onClose }: { onClose: () => void }): React.JSX.Element {
+export default function WorkflowImport(): React.JSX.Element {
   const downloads = useStore((s) => s.downloads)
   const refreshModels = useStore((s) => s.refreshModels)
 
+  const [open, setOpen] = useState(false)
   const [report, setReport] = useState<WorkflowReport | null>(null)
   const [urls, setUrls] = useState<Record<string, string>>({})
+  const [pasted, setPasted] = useState('')
+  const [dragging, setDragging] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -47,6 +50,33 @@ export default function WorkflowImport({ onClose }: { onClose: () => void }): Re
     } finally {
       setLoading(false)
     }
+  }
+
+  async function fromText(text: string): Promise<void> {
+    if (!text.trim()) return
+    setLoading(true)
+    setError('')
+    try {
+      setReport(await window.geni.workflows.inspectText(text))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function onDrop(e: React.DragEvent): Promise<void> {
+    e.preventDefault()
+    setDragging(false)
+
+    // El archivo soltado se lee en el renderer y se manda como texto: asi
+    // sirve tanto para un .json arrastrado como para texto suelto, sin
+    // necesitar la ruta real del archivo.
+    const file = e.dataTransfer.files[0]
+    if (file) return fromText(await file.text())
+
+    const text = e.dataTransfer.getData('text/plain')
+    if (text) return fromText(text)
   }
 
   async function download(filename: string): Promise<void> {
@@ -64,13 +94,22 @@ export default function WorkflowImport({ onClose }: { onClose: () => void }): Re
   const present = report?.requirements.filter((r) => r.installed) ?? []
 
   return (
-    <ModalRoot isOpen onOpenChange={(open) => !open && onClose()}>
+    <ModalRoot isOpen={open} onOpenChange={setOpen}>
+      {/* El trigger comparte layoutId con el panel: el boton se convierte en
+          el modal al abrir y vuelve a ser boton al cerrar, igual que los
+          demas botones que abren modales. */}
+      <ModalTrigger radius={999}>
+        <Button variant="secondary" icon="upload_file">
+          Importar workflow
+        </Button>
+      </ModalTrigger>
+
       <Modal
         title="Importar workflow de ComfyUI"
         size="lg"
         footer={
           <>
-            <Button size="sm" variant="outline" onClick={onClose}>
+            <Button size="sm" variant="outline" onClick={() => setOpen(false)}>
               Cerrar
             </Button>
             {report && missing.length > 0 && (
@@ -84,11 +123,63 @@ export default function WorkflowImport({ onClose }: { onClose: () => void }): Re
         {!report ? (
           <>
             <p className="mb-4 text-[13px] leading-snug text-ink-600">
-              Elige el .json que exportaste desde ComfyUI. GenI lo lee, lista los modelos que
-              necesita y te dice cuales ya tienes instalados.
+              Trae el workflow que exportaste desde ComfyUI de la forma que te quede mas comoda.
+              GenI lo lee, lista los modelos que necesita y te dice cuales ya tienes instalados.
             </p>
-            <Button icon="upload_file" loading={loading} onClick={() => void pick()}>
-              Elegir archivo
+
+            <div
+              onDragOver={(e) => {
+                e.preventDefault()
+                setDragging(true)
+              }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={(e) => void onDrop(e)}
+              className={cn(
+                'mb-4 rounded-box border-2 border-dashed p-6 text-center transition-colors',
+                dragging
+                  ? 'border-cobalt-500 bg-tint/12'
+                  : 'border-line/70 bg-white/40 dark:bg-white/4'
+              )}
+            >
+              <Icon name="upload_file" className="text-[30px] text-ink-300" />
+              <p className="mt-1 text-[13px] font-bold text-ink-700">
+                Suelta el .json aqui
+              </p>
+              <p className="mt-0.5 text-[11.6px] text-ink-400">o</p>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="mt-2"
+                loading={loading}
+                onClick={() => void pick()}
+              >
+                Elegir archivo
+              </Button>
+            </div>
+
+            <TextArea
+              label="Pegar el JSON"
+              value={pasted}
+              onChange={(e) => setPasted(e.target.value)}
+              onPaste={(e) => {
+                // Se procesa apenas se pega, sin obligar a apretar el boton.
+                const text = e.clipboardData.getData('text/plain')
+                if (text.trim().startsWith('{')) {
+                  e.preventDefault()
+                  setPasted(text)
+                  void fromText(text)
+                }
+              }}
+              placeholder='{ "1": { "class_type": "CheckpointLoaderSimple", ... } }'
+            />
+            <Button
+              size="sm"
+              variant="secondary"
+              loading={loading}
+              disabled={!pasted.trim()}
+              onClick={() => void fromText(pasted)}
+            >
+              Revisar el JSON pegado
             </Button>
           </>
         ) : (

@@ -12,6 +12,7 @@ export const CH = {
   installComfy: 'install:comfy',
 
   workflowPick: 'workflow:pick',
+  workflowInspectText: 'workflow:inspectText',
 
   comfyStatus: 'comfy:status',
   comfyStart: 'comfy:start',

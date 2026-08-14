@@ -98,7 +98,9 @@ export default function ChatPanel(): React.JSX.Element {
             </p>
           </div>
         ) : (
-          <div className="mx-auto max-w-2xl">
+          // Mas ancho que el compositor: cada mensaje son dos columnas (lo
+          // pedido y el resultado) y con max-w-2xl quedaban muy apretadas.
+          <div className="mx-auto max-w-5xl">
             {messages.map((m) => (
               <MessageBubble
                 key={m.id}

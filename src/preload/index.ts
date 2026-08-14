@@ -47,7 +47,9 @@ const api: GenIApi = {
       ipcRenderer.invoke(CH.settingsPickInstallFolder) as Promise<string | null>
   },
   workflows: {
-    pickAndInspect: () => ipcRenderer.invoke(CH.workflowPick) as Promise<WorkflowReport | null>
+    pickAndInspect: () => ipcRenderer.invoke(CH.workflowPick) as Promise<WorkflowReport | null>,
+    inspectText: (text) =>
+      ipcRenderer.invoke(CH.workflowInspectText, text) as Promise<WorkflowReport>
   },
   install: {
     detectEnv: () =>

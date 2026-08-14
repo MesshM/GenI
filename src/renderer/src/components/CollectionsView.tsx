@@ -5,9 +5,10 @@ import { Icon } from './ui/icon'
 import { Button } from './ui/button'
 import { ImageWithSkeleton } from './ui/image'
 import { Select } from './ui/select'
-import { TextArea } from './ui/field'
+import { Modal, ModalRoot, ModalTrigger } from './ui/modal'
+import { TextArea, TextField } from './ui/field'
 import { cn } from '@/lib/utils'
-import type { Collection, CollectionItem } from '@shared/types'
+import type { Collection, CollectionItem, Message } from '@shared/types'
 
 export default function CollectionsView(): React.JSX.Element {
   const collections = useStore((s) => s.collections)
@@ -63,13 +64,14 @@ function CollectionGrid({
   if (collections.length === 0) {
     return (
       <>
-        <Header title="Colecciones" />
+        <Header title="Colecciones" action={<NewCollection />} />
         <div className="rounded-panel border border-dashed border-line/70 px-4 py-12 text-center">
           <Icon name="collections_bookmark" className="text-[34px] text-ink-300" />
           <p className="mt-2 text-[13.7px] font-bold text-ink-700">Todavia no hay colecciones</p>
           <p className="mx-auto mt-1 max-w-md text-[12.6px] leading-snug text-ink-500">
-            Genera una imagen y toca el <b>+</b> sobre ella para guardarla en una coleccion. La
-            coleccion recuerda el modelo y los parametros, asi puedes seguir la misma linea despues.
+            Crea una desde aqui eligiendo una conversacion, o genera una imagen y toca el <b>+</b>{' '}
+            sobre ella. La coleccion recuerda el modelo y los parametros, asi puedes seguir la
+            misma linea despues.
           </p>
         </div>
       </>
@@ -78,7 +80,11 @@ function CollectionGrid({
 
   return (
     <>
-      <Header title="Colecciones" subtitle={`${collections.length} en total`} />
+      <Header
+        title="Colecciones"
+        subtitle={`${collections.length} en total`}
+        action={<NewCollection />}
+      />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {collections.map((c) => (
@@ -300,12 +306,185 @@ function CollectionDetail({
   )
 }
 
-function Header({ title, subtitle }: { title: string; subtitle?: string }): React.JSX.Element {
+function Header({
+  title,
+  subtitle,
+  action
+}: {
+  title: string
+  subtitle?: string
+  action?: React.ReactNode
+}): React.JSX.Element {
   return (
-    <div className="mb-4 pt-5">
-      <h2 className="text-[19px] font-extrabold tracking-tight text-ink-900">{title}</h2>
-      {subtitle && <p className="text-[11.6px] text-ink-400">{subtitle}</p>}
+    <div className="mb-4 flex items-center justify-between gap-3 pt-5">
+      <div>
+        <h2 className="text-[19px] font-extrabold tracking-tight text-ink-900">{title}</h2>
+        {subtitle && <p className="text-[11.6px] text-ink-400">{subtitle}</p>}
+      </div>
+      {action}
     </div>
+  )
+}
+
+/**
+ * Crear una coleccion desde su propia vista: aca no hay una imagen de
+ * contexto, asi que primero se elige de que conversacion sale la receta y
+ * despues cuales de sus imagenes entran.
+ */
+function NewCollection(): React.JSX.Element {
+  const conversations = useStore((s) => s.conversations)
+  const createCollection = useStore((s) => s.createCollection)
+  const refreshCollections = useStore((s) => s.refreshCollections)
+
+  const [open, setOpen] = useState(false)
+  const [name, setName] = useState('')
+  const [conversationId, setConversationId] = useState('')
+  const [messages, setMessages] = useState<Message[]>([])
+  const [selected, setSelected] = useState<string[]>([])
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (!conversationId) {
+      setMessages([])
+      setSelected([])
+      return
+    }
+    void window.geni.conversations.messages(conversationId).then((m) => {
+      setMessages(m)
+      setSelected([])
+    })
+  }, [conversationId])
+
+  // Solo mensajes que llegaron a producir algo; el resto no aporta nada aca.
+  const images = messages
+    .flatMap((m) => m.generations.map((g) => ({ generation: g, message: m })))
+    .reverse()
+
+  async function save(): Promise<void> {
+    if (!name.trim()) {
+      setError('Ponle un nombre a la coleccion')
+      return
+    }
+    setBusy(true)
+    setError('')
+    try {
+      // La receta sale del mensaje de la primera imagen elegida; si no se
+      // eligio ninguna, del ultimo mensaje de la conversacion.
+      const source =
+        images.find((i) => i.generation.id === selected[0])?.message ?? messages[messages.length - 1]
+
+      const collection = await createCollection({
+        name: name.trim(),
+        fromMessageId: source?.id,
+        promptTemplate: source?.prompt ?? '',
+        negativeTemplate: source?.negative ?? ''
+      })
+      if (selected.length > 0) {
+        await window.geni.collections.add(collection.id, selected)
+      }
+      await refreshCollections()
+      setOpen(false)
+      setName('')
+      setConversationId('')
+      setSelected([])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <ModalRoot isOpen={open} onOpenChange={setOpen}>
+      <ModalTrigger radius={999}>
+        <Button icon="add">Nueva coleccion</Button>
+      </ModalTrigger>
+
+      <Modal
+        title="Nueva coleccion"
+        size="lg"
+        footer={
+          <>
+            <Button size="sm" variant="outline" onClick={() => setOpen(false)}>
+              Cancelar
+            </Button>
+            <Button size="sm" loading={busy} disabled={!name.trim()} onClick={() => void save()}>
+              Crear
+            </Button>
+          </>
+        }
+      >
+        <TextField
+          label="Nombre"
+          autoFocus
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Retratos en blanco y negro"
+        />
+
+        <Select
+          label="Conversacion"
+          value={conversationId}
+          placeholder="Elige de donde salen las imagenes"
+          tip="La coleccion hereda el modelo y los parametros de esta conversacion."
+          options={conversations.map((c) => ({ value: c.id, label: c.title }))}
+          onChange={setConversationId}
+        />
+
+        {conversationId && (
+          <>
+            <p className="mb-2 text-[11.6px] font-bold uppercase tracking-wider text-ink-500">
+              Imagenes ({selected.length})
+            </p>
+            {images.length === 0 ? (
+              <p className="rounded-box border border-dashed border-line/70 px-3 py-6 text-center text-[12.6px] text-ink-400">
+                Esa conversacion todavia no tiene imagenes.
+              </p>
+            ) : (
+              <div className="grid grid-cols-5 gap-2">
+                {images.map(({ generation: g }) => {
+                  const on = selected.includes(g.id)
+                  return (
+                    <button
+                      key={g.id}
+                      onClick={() =>
+                        setSelected((prev) =>
+                          prev.includes(g.id) ? prev.filter((x) => x !== g.id) : [...prev, g.id]
+                        )
+                      }
+                      className={cn(
+                        'relative aspect-square overflow-hidden rounded-box border-2 transition-colors',
+                        on ? 'border-cobalt-500' : 'border-transparent opacity-55 hover:opacity-100'
+                      )}
+                    >
+                      <ImageWithSkeleton
+                        src={imageUrl(g.absPath)}
+                        alt=""
+                        wrapperClassName="h-full w-full"
+                        className="h-full w-full object-cover"
+                      />
+                      {on && (
+                        <span className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-cta text-white">
+                          <Icon name="check" className="text-[13px]" />
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </>
+        )}
+
+        {error && (
+          <p className="mt-3 flex items-start gap-1.5 text-[12px] font-semibold text-rose-text">
+            <Icon name="error" filled className="mt-px text-[15px]" />
+            {error}
+          </p>
+        )}
+      </Modal>
+    </ModalRoot>
   )
 }
 

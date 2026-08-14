@@ -34,35 +34,38 @@
   --color-cream-300: oklch(0.94 0.012 90);
   --color-cream-400: oklch(0.9 0.015 88);
 
-  /* Azules crema (marca) */
-  --color-brand-50: oklch(0.96 0.02 250);
-  --color-brand-100: oklch(0.9 0.05 250);
-  --color-brand-200: oklch(0.82 0.08 250);
-  --color-brand-300: oklch(0.72 0.115 251);
-  --color-brand-400: oklch(0.64 0.145 251);
-  --color-brand-500: oklch(0.58 0.16 252);
-  --color-brand-600: oklch(0.52 0.155 253);
-  --color-brand-700: oklch(0.45 0.135 254);
+  /* Carmesi (marca) */
+  --color-brand-50: oklch(0.965 0.015 20);
+  --color-brand-100: oklch(0.91 0.04 18);
+  --color-brand-200: oklch(0.84 0.07 16);
+  --color-brand-300: oklch(0.74 0.11 16);
+  --color-brand-400: oklch(0.65 0.15 15);
+  --color-brand-500: oklch(0.57 0.18 15);
+  --color-brand-600: oklch(0.5 0.175 14);
+  --color-brand-700: oklch(0.43 0.15 14);
 
-  /* Marca (muestreado del logo) */
-  --color-cobalt-700: oklch(0.5 0.2 262);
-  --color-cobalt-600: oklch(0.57 0.19 261);
-  --color-cobalt-500: oklch(0.64 0.17 258);
-  --color-cobalt-hi: oklch(0.62 0.18 250);
-  --color-cielo-400: oklch(0.74 0.12 248);
-  --color-cielo-300: oklch(0.83 0.08 244);
+  /* Marca: carmesi. Los nombres cobalt/cielo quedaron del azul original,
+     pero son los tokens de "lo activo" en toda la app y renombrarlos
+     tocaria cada componente; el tema oscuro ya los redefine a crema. */
+  --color-cobalt-700: oklch(0.43 0.17 14);
+  --color-cobalt-600: oklch(0.5 0.19 15);
+  --color-cobalt-500: oklch(0.57 0.18 16);
+  --color-cobalt-hi: oklch(0.55 0.2 10);
+  --color-cielo-400: oklch(0.68 0.14 18);
+  --color-cielo-300: oklch(0.8 0.09 20);
   --color-warm-300: oklch(0.9 0.03 86);
   --color-warm-200: oklch(0.94 0.022 88);
   --color-warm-100: oklch(0.965 0.014 90);
 
-  /* Tinta / texto */
-  --color-ink-900: oklch(0.27 0.035 264);
-  --color-ink-800: oklch(0.33 0.032 264);
-  --color-ink-700: oklch(0.4 0.03 263);
-  --color-ink-600: oklch(0.48 0.026 262);
-  --color-ink-500: oklch(0.56 0.022 262);
-  --color-ink-400: oklch(0.66 0.018 260);
-  --color-ink-300: oklch(0.76 0.015 260);
+  /* Tinta / texto. Chroma muy baja: es gris, apenas tirando al tono de la
+     marca para que no pelee con el carmesi. */
+  --color-ink-900: oklch(0.27 0.02 20);
+  --color-ink-800: oklch(0.33 0.018 20);
+  --color-ink-700: oklch(0.4 0.016 20);
+  --color-ink-600: oklch(0.48 0.014 20);
+  --color-ink-500: oklch(0.56 0.012 20);
+  --color-ink-400: oklch(0.66 0.01 20);
+  --color-ink-300: oklch(0.76 0.008 20);
 
   /* Estados */
   --color-amber: oklch(0.74 0.13 72);
@@ -72,20 +75,26 @@
   --color-green: oklch(0.66 0.13 158);
   --color-green-bg: oklch(0.93 0.045 160);
   --color-green-deep: oklch(0.48 0.12 158);
-  --color-rose: oklch(0.64 0.16 18);
-  --color-rose-bg: oklch(0.93 0.045 22);
-  --color-rose-deep: oklch(0.56 0.16 14);
-  --color-rose-text: oklch(0.5 0.16 20);
+  /* Peligro. Se corre al bermellon (tono 40) para no confundirse con el
+     carmesi de la marca (tono 15): borrar y generar no pueden verse igual.
+     Los valores estan bajados de croma a proposito para que entren en el
+     gamut sRGB; mas saturado el navegador los recorta y el rojo se vuelve
+     un marron sucio. Verificado: texto blanco sobre rose da 4.6:1, y
+     rose-text sobre rose-bg da 6:1. */
+  --color-rose: oklch(0.58 0.17 40);
+  --color-rose-bg: oklch(0.94 0.03 45);
+  --color-rose-deep: oklch(0.5 0.16 38);
+  --color-rose-text: oklch(0.47 0.145 38);
   --color-violet: oklch(0.62 0.15 300);
 
   /* Neutros translucidos (usar con opacidad: bg-tint/16) */
-  --color-tint: oklch(0.72 0.14 258);
-  --color-mist: oklch(0.75 0.06 255);
-  --color-fog: oklch(0.8 0.02 262);
-  --color-line: oklch(0.84 0.02 262);
-  --color-line2: oklch(0.82 0.02 262);
-  --color-steel: oklch(0.78 0.03 262);
-  --color-halo: oklch(0.7 0.12 255);
+  --color-tint: oklch(0.68 0.15 18);
+  --color-mist: oklch(0.76 0.05 20);
+  --color-fog: oklch(0.8 0.015 20);
+  --color-line: oklch(0.85 0.012 20);
+  --color-line2: oklch(0.83 0.012 20);
+  --color-steel: oklch(0.78 0.02 20);
+  --color-halo: oklch(0.62 0.14 18);
 
   /* Radios */
   --radius-chip: 10px;
@@ -94,30 +103,30 @@
   --radius-shell: 26px;
 
   /* Sombras */
-  --shadow-3d-sm: 0 1px 2px rgba(38, 57, 110, 0.06), 0 2px 6px rgba(38, 57, 110, 0.05);
-  --shadow-3d-md: 0 2px 6px rgba(38, 57, 110, 0.06), 0 8px 20px rgba(38, 57, 110, 0.08);
-  --shadow-3d-lg: 0 6px 16px rgba(38, 57, 110, 0.08), 0 18px 40px rgba(38, 57, 110, 0.12);
-  --shadow-soft: 0 2px 8px -4px rgba(38, 54, 110, 0.22);
-  --shadow-lift: 0 10px 26px -16px rgba(38, 54, 110, 0.4), 0 3px 10px -8px rgba(38, 54, 110, 0.22);
-  --shadow-deep: 0 28px 60px -30px rgba(33, 49, 104, 0.46), 0 8px 20px -16px rgba(33, 49, 104, 0.28);
-  --shadow-blue: 0 14px 34px -14px oklch(0.57 0.19 261 / 0.45);
-  --shadow-frame: inset 0 0 0 1px rgba(38, 54, 110, 0.08), inset 0 0 26px -6px rgba(38, 54, 110, 0.22);
+  --shadow-3d-sm: 0 1px 2px rgba(88, 22, 32, 0.06), 0 2px 6px rgba(88, 22, 32, 0.05);
+  --shadow-3d-md: 0 2px 6px rgba(88, 22, 32, 0.06), 0 8px 20px rgba(88, 22, 32, 0.08);
+  --shadow-3d-lg: 0 6px 16px rgba(88, 22, 32, 0.08), 0 18px 40px rgba(88, 22, 32, 0.12);
+  --shadow-soft: 0 2px 8px -4px rgba(88, 22, 32, 0.22);
+  --shadow-lift: 0 10px 26px -16px rgba(88, 22, 32, 0.4), 0 3px 10px -8px rgba(88, 22, 32, 0.22);
+  --shadow-deep: 0 28px 60px -30px rgba(78, 18, 28, 0.46), 0 8px 20px -16px rgba(78, 18, 28, 0.28);
+  --shadow-blue: 0 14px 34px -14px oklch(0.5 0.19 15 / 0.45);
+  --shadow-frame: inset 0 0 0 1px rgba(88, 22, 32, 0.08), inset 0 0 26px -6px rgba(88, 22, 32, 0.22);
   --shadow-glass-sm: var(--glass-edge), var(--shadow-soft);
   --shadow-glass-md: var(--glass-edge), var(--shadow-lift);
   --shadow-glass-lg: var(--glass-edge), var(--shadow-deep);
   --shadow-cta: var(--shadow-blue), inset 0 1px 0 rgba(255, 255, 255, 0.35);
-  --shadow-cta-hover: 0 18px 38px -14px oklch(0.57 0.19 261 / 0.6),
+  --shadow-cta-hover: 0 18px 38px -14px oklch(0.5 0.19 15 / 0.6),
     inset 0 1px 0 rgba(255, 255, 255, 0.4);
 
   /* Fondos compuestos */
   --background-image-bloom: radial-gradient(
       120% 90% at 88% -8%,
-      oklch(0.72 0.15 258 / 0.34) 0%,
+      oklch(0.72 0.14 18 / 0.3) 0%,
       transparent 46%
     ),
     radial-gradient(95% 80% at -6% 108%, oklch(0.88 0.05 86 / 0.55) 0%, transparent 50%),
-    radial-gradient(70% 60% at 60% 120%, oklch(0.78 0.1 250 / 0.22) 0%, transparent 55%),
-    linear-gradient(168deg, var(--warm-100) 0%, oklch(0.96 0.018 240) 55%, var(--warm-200) 100%);
+    radial-gradient(70% 60% at 60% 120%, oklch(0.78 0.1 20 / 0.2) 0%, transparent 55%),
+    linear-gradient(168deg, var(--warm-100) 0%, oklch(0.965 0.012 30) 55%, var(--warm-200) 100%);
   --background-image-wordmark: linear-gradient(
     120deg,
     var(--color-cobalt-600),
@@ -174,7 +183,7 @@
 :root {
   --radius: 0.75rem;
   --background: var(--color-cream-100);
-  --foreground: oklch(0.25 0.018 264);
+  --foreground: oklch(0.25 0.018 20);
 
   --warm-100: oklch(0.965 0.014 90);
   --warm-200: oklch(0.94 0.022 88);

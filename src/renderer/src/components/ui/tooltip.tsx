@@ -1,11 +1,11 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { Icon } from './icon'
 import { cn } from '@/lib/utils'
 
 /**
- * Signo de interrogacion que muestra una explicacion al pasar el mouse.
+ * Burbuja de ayuda al pasar el mouse.
  *
  * Se porta a document.body y se posiciona con coordenadas de viewport, igual
  * que el Select: los paneles glass usan backdrop-filter, que crea su propio
@@ -13,26 +13,33 @@ import { cn } from '@/lib/utils'
  * portal, el tooltip queda atrapado dentro del panel y aparece recortado o
  * detras del sidebar en vez de flotar sobre todo.
  */
-export function InfoTip({ text, className }: { text: string; className?: string }): React.JSX.Element {
+export function Tooltip({
+  text,
+  children,
+  className
+}: {
+  text: string
+  children: ReactNode
+  className?: string
+}): React.JSX.Element {
   const [open, setOpen] = useState(false)
   const [rect, setRect] = useState<DOMRect | null>(null)
-  const iconRef = useRef<HTMLSpanElement>(null)
+  const anchorRef = useRef<HTMLSpanElement>(null)
 
   useLayoutEffect(() => {
-    if (open && iconRef.current) setRect(iconRef.current.getBoundingClientRect())
+    if (open && anchorRef.current) setRect(anchorRef.current.getBoundingClientRect())
   }, [open])
 
   return (
     <span
-      ref={iconRef}
-      className={cn('relative inline-flex shrink-0 cursor-help', className)}
+      ref={anchorRef}
+      className={cn('relative inline-flex shrink-0', className)}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
+      onFocus={() => setOpen(true)}
+      onBlur={() => setOpen(false)}
     >
-      <Icon
-        name="help"
-        className="text-[13.7px] text-ink-300 transition-colors hover:text-cobalt-500"
-      />
+      {children}
 
       {createPortal(
         <AnimatePresence>
@@ -63,5 +70,17 @@ export function InfoTip({ text, className }: { text: string; className?: string 
         document.body
       )}
     </span>
+  )
+}
+
+/** Signo de interrogacion junto a una etiqueta, con su explicacion. */
+export function InfoTip({ text, className }: { text: string; className?: string }): React.JSX.Element {
+  return (
+    <Tooltip text={text} className={cn('cursor-help', className)}>
+      <Icon
+        name="help"
+        className="text-[13.7px] text-ink-300 transition-colors hover:text-cobalt-500"
+      />
+    </Tooltip>
   )
 }

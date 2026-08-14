@@ -105,6 +105,25 @@ export async function deletePreset(id: string): Promise<void> {
   getDb().prepare('DELETE FROM presets WHERE id = ?').run(id)
 }
 
+/**
+ * Rutas que el usuario eligio a mano en un dialogo del sistema durante esta
+ * sesion. El protocolo de imagenes solo sirve archivos de las carpetas de la
+ * app; sin esta lista, la imagen recien elegida para un preset no se podia
+ * previsualizar hasta despues de guardarla (recien ahi se copia adentro).
+ *
+ * Es seguro: solo entra lo que el usuario abrio explicitamente en el dialogo,
+ * nunca una ruta que mande la interfaz por su cuenta. Se limpia al cerrar.
+ */
+const userPickedImages = new Set<string>()
+
+export function allowPickedImage(path: string): void {
+  userPickedImages.add(resolve(path))
+}
+
+export function isPickedImage(path: string): boolean {
+  return userPickedImages.has(resolve(path))
+}
+
 /** Confirma que el archivo de referencia elegido existe y es una imagen razonable. */
 export async function isImageFile(path: string): Promise<boolean> {
   const ok = ['.png', '.jpg', '.jpeg', '.webp', '.gif'].includes(extname(path).toLowerCase())

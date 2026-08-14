@@ -1,54 +1,13 @@
 import { useMemo, useState } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
 import { PARAMS_MAX, PARAMS_MIN, useStore } from '../store/useStore'
 import { Icon } from './ui/icon'
-import { Section, Slider, Switch, TextArea } from './ui/field'
+import { Section, Slider, TextArea } from './ui/field'
 import { Select } from './ui/select'
 import { TranslateButton } from './ui/translate-button'
 import { Resizer } from './ui/resizer'
-import { aspectRatioLabel, cn } from '@/lib/utils'
-
-/** Rectangulo a escala que muestra la proporcion de la resolucion. */
-function RatioShape({
-  width,
-  height,
-  active
-}: {
-  width: number
-  height: number
-  active: boolean
-}): React.JSX.Element {
-  const MAX_SIDE = 24
-  const scale = width >= height ? MAX_SIDE / width : MAX_SIDE / height
-  const boxW = Math.max(6, Math.round(width * scale))
-  const boxH = Math.max(6, Math.round(height * scale))
-
-  return (
-    <span className="flex h-6.5 items-center justify-center">
-      <span
-        className={cn(
-          'rounded-[3px] border-2',
-          active ? 'border-cobalt-600' : 'border-ink-300'
-        )}
-        style={{ width: boxW, height: boxH }}
-      />
-    </span>
-  )
-}
-
-const SAMPLERS = [
-  'euler',
-  'euler_ancestral',
-  'dpmpp_2m',
-  'dpmpp_2m_sde',
-  'dpmpp_3m_sde',
-  'ddim',
-  'uni_pc'
-].map((v) => ({ value: v, label: v }))
-
-const SCHEDULERS = ['normal', 'karras', 'exponential', 'simple', 'beta'].map((v) => ({
-  value: v,
-  label: v
-}))
+import { ParamFields } from './ParamFields'
+import { cn } from '@/lib/utils'
 
 export default function ParamsPanel(): React.JSX.Element {
   const recipes = useStore((s) => s.recipes)
@@ -71,6 +30,9 @@ export default function ParamsPanel(): React.JSX.Element {
 
   const [picking, setPicking] = useState(false)
   const [presetChoice, setPresetChoice] = useState('')
+  // Con un preset cargado los parametros ya estan resueltos y el panel es
+  // ruido; se pliegan solos y se vuelven a abrir con el ojo.
+  const [showParams, setShowParams] = useState(true)
   const recipe = recipes.find((r) => r.id === recipeId)
 
   // Solo se ofrecen presets cuyo modelo siga instalado: uno huerfano no se
@@ -153,6 +115,10 @@ export default function ParamsPanel(): React.JSX.Element {
               onChange={(id) => {
                 setPresetChoice(id)
                 if (id) applyPreset(id)
+                // Al cargar un preset los parametros quedan definidos por el
+                // preset: se pliegan para dejar el panel limpio. Al volver a
+                // "sin preset" se muestran de nuevo, que es cuando importan.
+                setShowParams(!id)
               }}
             />
           </Section>
@@ -328,147 +294,42 @@ export default function ParamsPanel(): React.JSX.Element {
           </Section>
         )}
 
-        {/* 4. Resolucion */}
-        {recipe.resolutions.length > 0 && !isEdit && (
-          <Section
-            title="Resolucion"
-            tip="Tamano final de la imagen. Resoluciones muy grandes tardan mas y usan mas memoria de video."
+        {/* 4-6. Resolucion, muestreo y semilla (compartidos con el
+             dialogo de nuevo preset, para que no se desincronicen) */}
+        <div className="mb-3 flex items-center gap-2">
+          <span className="h-px flex-1 bg-line/60" />
+          <button
+            onClick={() => setShowParams((v) => !v)}
+            className="flex items-center gap-1 rounded-full border border-line/60 bg-white/60 px-2.5 py-1 text-[11px] font-bold text-ink-500 transition-colors hover:text-cobalt-600 dark:bg-white/5"
           >
-            <div className="mb-3 grid grid-cols-3 gap-1.5">
-              {recipe.resolutions.map((r) => {
-                const active = params.width === r.width && params.height === r.height
-                return (
-                  <button
-                    key={r.label}
-                    title={r.label}
-                    onClick={() => patchParams({ width: r.width, height: r.height })}
-                    className={cn(
-                      'flex flex-col items-center gap-0.5 rounded-chip border px-1.5 py-2 transition-colors',
-                      active
-                        ? 'border-cobalt-500/60 bg-tint/16'
-                        : 'border-line/60 bg-white/50 hover:bg-white dark:bg-white/5 dark:hover:bg-white/10'
-                    )}
-                  >
-                    <RatioShape width={r.width} height={r.height} active={active} />
-                    <span
-                      className={cn(
-                        'text-[11.6px] font-extrabold',
-                        active ? 'text-cobalt-700' : 'text-ink-600'
-                      )}
-                    >
-                      {aspectRatioLabel(r.width, r.height)}
-                    </span>
-                    <span className="text-[9.8px] font-semibold text-ink-400">
-                      {r.width}×{r.height}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <Slider
-                label="Ancho"
-                value={params.width}
-                min={512}
-                max={2048}
-                step={64}
-                onChange={(width) => patchParams({ width })}
-              />
-              <Slider
-                label="Alto"
-                value={params.height}
-                min={512}
-                max={2048}
-                step={64}
-                onChange={(height) => patchParams({ height })}
-              />
-            </div>
-          </Section>
-        )}
-
-        {/* 5. Muestreo */}
-        <Section title="Muestreo">
-          <Slider
-            label="Pasos"
-            tip="Cuantas veces el modelo refina la imagen. Mas pasos, mas detalle, pero mas lento."
-            value={params.steps}
-            min={1}
-            max={80}
-            step={1}
-            onChange={(steps) => patchParams({ steps })}
-          />
-          <Slider
-            label={isFlux ? 'Guia' : 'CFG'}
-            tip={
-              isFlux
-                ? 'Cuanto sigue el modelo tu prompt al pie de la letra.'
-                : 'Cuanto sigue el modelo tu prompt. Muy alto puede saturar colores o generar artefactos.'
-            }
-            value={params.cfg}
-            min={0}
-            max={20}
-            step={0.1}
-            onChange={(cfg) => patchParams({ cfg })}
-            hint={isFlux ? 'En FLUX este es el control util; el CFG queda en 1.' : undefined}
-          />
-          <Select
-            label="Sampler"
-            tip="El metodo matematico que usa el modelo para llegar a la imagen final. Cada uno da resultados ligeramente distintos."
-            value={params.samplerName}
-            options={SAMPLERS}
-            onChange={(samplerName) => patchParams({ samplerName })}
-          />
-          <Select
-            label="Scheduler"
-            tip="Como se reparten los pasos a lo largo de la generacion. Afecta la nitidez y el ritmo del detalle."
-            value={params.scheduler}
-            options={SCHEDULERS}
-            onChange={(scheduler) => patchParams({ scheduler })}
-          />
-          {params.denoise !== undefined && !isFlux && (
-            <Slider
-              label="Denoise del refinado"
-              tip="Cuanto reinventa la segunda pasada sobre la imagen base."
-              value={params.denoise}
-              min={0}
-              max={1}
-              step={0.05}
-              onChange={(denoise) => patchParams({ denoise })}
-              hint="Sobre 0.6 empieza a cambiar la composicion."
+            <Icon
+              name={showParams ? 'visibility_off' : 'visibility'}
+              className="text-[14px]"
             />
-          )}
-        </Section>
+            {showParams ? 'Ocultar parametros' : 'Ver parametros'}
+          </button>
+          <span className="h-px flex-1 bg-line/60" />
+        </div>
 
-        {/* 6. Semilla y lote */}
-        <Section title="Semilla">
-          <Switch
-            label="Aleatoria en cada envio"
-            tip="Si esta activo, cada generacion usa un numero al azar. Desactivalo para repetir siempre la misma composicion base."
-            checked={params.randomSeed}
-            onChange={(randomSeed) => patchParams({ randomSeed })}
-          />
-          {!params.randomSeed && (
-            <Slider
-              label="Valor"
-              tip="El numero que arranca el ruido inicial. Misma semilla + mismos parametros = misma imagen."
-              value={params.seed}
-              min={0}
-              max={4294967295}
-              step={1}
-              counterWidth={128}
-              onChange={(seed) => patchParams({ seed })}
-            />
+        <AnimatePresence initial={false}>
+          {showParams && (
+            <motion.div
+              key="params"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+              className="overflow-hidden"
+            >
+              <ParamFields
+                recipe={recipe}
+                params={params}
+                patchParams={patchParams}
+                hideResolution={isEdit}
+              />
+            </motion.div>
           )}
-          <Slider
-            label="Imagenes por envio"
-            tip="Cuantas imagenes genera cada vez que le das a Generar."
-            value={params.batchSize}
-            min={1}
-            max={4}
-            step={1}
-            onChange={(batchSize) => patchParams({ batchSize })}
-          />
-        </Section>
+        </AnimatePresence>
         </div>
       </aside>
 

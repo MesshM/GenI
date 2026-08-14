@@ -9,7 +9,7 @@ import { comfyProcess } from './comfy/process'
 import { comfyClient } from './comfy/client'
 import { compressConversation, resolveFromZip } from './conversations/archive'
 import { getLastActiveConversation, getSettings } from './settings'
-import { presetsImagesRoot } from './presets/manager'
+import { isPickedImage, presetsImagesRoot } from './presets/manager'
 import { updater } from './updater'
 import { EV } from '@shared/channels'
 
@@ -113,7 +113,13 @@ function registerImageProtocol(): void {
     const roots = [resolve(join(getSettings().comfyPath, 'output')), resolve(presetsImagesRoot())]
     const target = resolve(normalize(requested))
 
-    const allowed = roots.some((root) => target === root || target.startsWith(root + sep))
+    // Ademas de las dos carpetas de la app, se sirve lo que el usuario haya
+    // elegido a mano en un dialogo: es la unica forma de previsualizar la
+    // imagen de referencia de un preset antes de guardarlo (recien al
+    // guardar se copia adentro de la carpeta de la app).
+    const allowed =
+      roots.some((root) => target === root || target.startsWith(root + sep)) ||
+      isPickedImage(target)
     if (!allowed) {
       return new Response('Ruta fuera de la carpeta permitida', { status: 403 })
     }

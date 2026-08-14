@@ -149,7 +149,7 @@ export function Modal({
         <>
           <motion.div
             key={`backdrop-${uniqueId}`}
-            className="fixed inset-0 z-69 bg-[oklch(0.3_0.03_264/0.45)] backdrop-blur-[6px]"
+            className="fixed inset-0 z-69 bg-[oklch(0.25_0.02_20/0.45)] backdrop-blur-[6px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
