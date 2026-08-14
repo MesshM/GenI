@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { motion } from 'motion/react'
 import { useStore } from '../store/useStore'
 import MessageBubble from './MessageBubble'
 import CollectModal from './CollectModal'
@@ -21,6 +22,7 @@ export default function ChatPanel(): React.JSX.Element {
   const scrollRef = useRef<HTMLDivElement>(null)
   const endRef = useRef<HTMLDivElement>(null)
   const promptRef = useAutoGrow(prompt)
+  const [focused, setFocused] = useState(false)
 
   // Imagen que se esta por guardar en una coleccion (abre el modal).
   const [collecting, setCollecting] = useState<{
@@ -98,9 +100,10 @@ export default function ChatPanel(): React.JSX.Element {
             </p>
           </div>
         ) : (
-          // Mas ancho que el compositor: cada mensaje son dos columnas (lo
-          // pedido y el resultado) y con max-w-2xl quedaban muy apretadas.
-          <div className="mx-auto max-w-5xl">
+          // Un poco mas ancho que el compositor: cada mensaje son dos
+          // columnas (lo pedido y el resultado), pero sin pasarse — el
+          // 5xl anterior quedaba enorme para el contenido real.
+          <div className="mx-auto max-w-2xl">
             {messages.map((m) => (
               <MessageBubble
                 key={m.id}
@@ -115,7 +118,19 @@ export default function ChatPanel(): React.JSX.Element {
       </div>
 
       <div className="mx-auto mt-3 w-full max-w-2xl px-4">
-        <div className="glass-strong rounded-panel p-2.5 shadow-lift">
+        {/* El foco se marca en el contenedor, no en el textarea: un borde
+            saltando justo en el borde del texto se sentia raro. El anillo
+            entra y sale animado con el mismo borde que ya usan los demas
+            inputs de la app (halo/cobalt), no el azul nativo del navegador. */}
+        <motion.div
+          animate={{
+            boxShadow: focused
+              ? '0 0 0 3px color-mix(in oklab, var(--color-halo) 40%, transparent)'
+              : '0 0 0 0px transparent'
+          }}
+          transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
+          className="glass-strong rounded-panel p-2.5 shadow-lift"
+        >
           {/* Autogrow sin tope ni scroll interno: crece con el texto, sin
               limite. Se siente raro tener un scroll adentro de una caja que
               ya crece sola. */}
@@ -124,6 +139,8 @@ export default function ChatPanel(): React.JSX.Element {
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             onKeyDown={onKeyDown}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
             rows={1}
             placeholder={
               comfy.state !== 'ready'
@@ -133,7 +150,8 @@ export default function ChatPanel(): React.JSX.Element {
                   : 'Describe la imagen... (Enter para enviar, Shift+Enter para salto de linea)'
             }
             disabled={!ready}
-            className="w-full resize-none overflow-hidden bg-transparent px-2 py-1.5 text-[14.7px] leading-relaxed text-ink-800 outline-none placeholder:text-ink-400 disabled:opacity-50"
+            style={{ outline: 'none' }}
+            className="w-full resize-none overflow-hidden bg-transparent px-2 py-1.5 text-[14.7px] leading-relaxed text-ink-800 placeholder:text-ink-400 disabled:opacity-50"
           />
           <div className="flex items-center justify-between gap-2 px-1">
             <div className="flex items-center gap-3">
@@ -152,7 +170,7 @@ export default function ChatPanel(): React.JSX.Element {
               {generating ? 'Generando' : 'Generar'}
             </Button>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {collecting && (

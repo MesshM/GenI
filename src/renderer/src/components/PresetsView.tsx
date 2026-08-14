@@ -7,22 +7,9 @@ import { Modal, ModalRoot, ModalTrigger } from './ui/modal'
 import { TextArea, TextField } from './ui/field'
 import { Select } from './ui/select'
 import { ParamFields } from './ParamFields'
+import { LoraFields } from './LoraFields'
 import WorkflowImport from './WorkflowImport'
 import { cn } from '@/lib/utils'
-
-/** Etiqueta chica para resumir que entra en el preset. */
-function Tag({ children, muted }: { children: React.ReactNode; muted?: boolean }): React.JSX.Element {
-  return (
-    <span
-      className={cn(
-        'rounded-full border border-line/50 px-2 py-0.5 text-[10.5px] font-bold',
-        muted ? 'text-ink-400' : 'bg-white/60 text-ink-600 dark:bg-white/6'
-      )}
-    >
-      {children}
-    </span>
-  )
-}
 
 export default function PresetsView(): React.JSX.Element {
   const presets = useStore((s) => s.presets)
@@ -30,13 +17,15 @@ export default function PresetsView(): React.JSX.Element {
   const recipeId = useStore((s) => s.recipeId)
   const params = useStore((s) => s.params)
   const negative = useStore((s) => s.negative)
+  const models = useStore((s) => s.models)
   const chooseRecipe = useStore((s) => s.chooseRecipe)
   const patchParams = useStore((s) => s.patchParams)
   const setNegative = useStore((s) => s.setNegative)
+  const addLora = useStore((s) => s.addLora)
+  const removeLora = useStore((s) => s.removeLora)
+  const patchLora = useStore((s) => s.patchLora)
   const createPreset = useStore((s) => s.createPreset)
   const removePreset = useStore((s) => s.removePreset)
-
-  const activeLoras = params?.loras.filter((l) => l.enabled) ?? []
 
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
@@ -149,25 +138,14 @@ export default function PresetsView(): React.JSX.Element {
                     placeholder="worst quality, bad anatomy..."
                   />
 
-                  <div className="mb-4 rounded-box border border-line/50 bg-white/50 px-3 py-2.5 dark:bg-white/5">
-                    <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-ink-400">
-                      LoRAs incluidas
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {activeLoras.length > 0 ? (
-                        activeLoras.map((l) => (
-                          <Tag key={l.modelId}>
-                            {l.label} · {l.strength}
-                          </Tag>
-                        ))
-                      ) : (
-                        <Tag muted>ninguna</Tag>
-                      )}
-                    </div>
-                    <p className="mt-2 text-[11px] leading-snug text-ink-400">
-                      Las LoRAs se agregan y se quitan desde la vista Generar.
-                    </p>
-                  </div>
+                  <LoraFields
+                    recipe={currentRecipe}
+                    params={params}
+                    models={models}
+                    addLora={addLora}
+                    removeLora={removeLora}
+                    patchLora={patchLora}
+                  />
                 </>
               )}
 

@@ -1,12 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useId,
-  useState,
-  type ReactNode
-} from 'react'
+import { createContext, useCallback, useContext, useEffect, useId, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, MotionConfig, motion, type Transition } from 'motion/react'
 import { Button } from './button'
@@ -44,10 +36,6 @@ interface ModalRootProps {
   transition?: Transition
 }
 
-/**
- * Comparte un layoutId entre el disparador y el panel: el boton se "convierte"
- * en el modal al abrir y vuelve a ser boton al cerrar.
- */
 export function ModalRoot({
   children,
   isOpen: controlled,
@@ -79,29 +67,26 @@ interface ModalTriggerProps {
   children: ReactNode
   className?: string
   fullWidth?: boolean
-  /** Radio del disparador. Framer lo anima hasta el del panel. */
+  /** Sin uso ya (quedo del morph compartido); se deja para no romper a quien lo pasaba. */
   radius?: number
 }
 
-/** Queda visible: el backdrop lo tapa. Framer lee su posicion para animar desde ahi. */
 export function ModalTrigger({
   children,
   className,
-  fullWidth = false,
-  radius = 14
+  fullWidth = false
 }: ModalTriggerProps): React.JSX.Element {
-  const { isOpen, setIsOpen, uniqueId } = useModalCtx()
+  const { isOpen, setIsOpen } = useModalCtx()
   return (
-    <motion.div
-      layoutId={`modal-${uniqueId}`}
-      style={{ borderRadius: radius, width: fullWidth ? '100%' : 'fit-content' }}
+    <div
+      style={{ width: fullWidth ? '100%' : 'fit-content' }}
       className={cn('cursor-pointer', className)}
       onClick={() => !isOpen && setIsOpen(true)}
       role="button"
       aria-expanded={isOpen}
     >
       {children}
-    </motion.div>
+    </div>
   )
 }
 
@@ -128,7 +113,7 @@ export function Modal({
   closeOnBackdrop = true,
   closeOnEscape = true
 }: ModalProps): React.JSX.Element | null {
-  const { isOpen, setIsOpen, uniqueId } = useModalCtx()
+  const { isOpen, setIsOpen } = useModalCtx()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => setMounted(true), [])
@@ -148,7 +133,6 @@ export function Modal({
       {isOpen && (
         <>
           <motion.div
-            key={`backdrop-${uniqueId}`}
             className="fixed inset-0 z-69 bg-[oklch(0.25_0.02_20/0.45)] backdrop-blur-[6px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -158,19 +142,30 @@ export function Modal({
           />
 
           <div className="pointer-events-none fixed inset-0 z-70 flex items-center justify-center p-4">
+            {/*
+              Antes esto compartia layoutId con el disparador (el boton se
+              "convertia" en el modal). Se saco: Framer mide el boton
+              disparador para armar esa animacion, y si esa medicion pasa
+              antes de que la tipografia de iconos (una fuente variable de
+              5MB, autohospedada) termine de asentar el layout, la medicion
+              queda vieja y la animacion se traba a mitad de camino — el
+              panel queda con scale casi en cero y opacity 0, montado y con
+              sus handlers funcionando, pero invisible y en el lugar
+              equivocado. Un escala+fade centrado no mide nada de otro
+              elemento, asi que no tiene con que trabarse.
+            */}
             <motion.div
-              layoutId={`modal-${uniqueId}`}
               className={cn(
-                'glass-strong pointer-events-auto relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-panel shadow-glass-lg will-change-transform',
+                'glass-strong pointer-events-auto relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-panel shadow-glass-lg',
                 SIZE_CLASS[size],
                 className
               )}
               style={{ borderRadius: 20 }}
               role="dialog"
               aria-modal="true"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0, scale: 0.94, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 8 }}
             >
               {(title || showClose) && (
                 <div className="flex shrink-0 items-center gap-3 border-b border-line/45 py-4 pl-5 pr-4.5">
