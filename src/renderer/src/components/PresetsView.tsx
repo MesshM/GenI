@@ -75,126 +75,126 @@ export default function PresetsView(): React.JSX.Element {
           </div>
 
           <div className="flex items-center gap-2">
-          <WorkflowImport />
+            <WorkflowImport />
 
-          <ModalRoot isOpen={open} onOpenChange={setOpen}>
-            <ModalTrigger>
-              <Button icon="add" disabled={!currentRecipe}>
-                Nuevo preset
-              </Button>
-            </ModalTrigger>
+            <ModalRoot isOpen={open} onOpenChange={setOpen}>
+              <ModalTrigger>
+                <Button icon="add" disabled={!currentRecipe}>
+                  Nuevo preset
+                </Button>
+              </ModalTrigger>
 
-            <Modal
-              title="Nuevo preset"
-              footer={
-                <>
-                  <Button size="sm" variant="outline" onClick={() => setOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button size="sm" loading={saving} disabled={!name.trim()} onClick={() => void save()}>
-                    Guardar
-                  </Button>
-                </>
-              }
-            >
-              <TextField
-                label="Nombre"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ej: Retrato realista, alto detalle"
-                autoFocus
-              />
+              <Modal
+                title="Nuevo preset"
+                footer={
+                  <>
+                    <Button size="sm" variant="outline" onClick={() => setOpen(false)}>
+                      Cancelar
+                    </Button>
+                    <Button size="sm" loading={saving} disabled={!name.trim()} onClick={() => void save()}>
+                      Guardar
+                    </Button>
+                  </>
+                }
+              >
+                <TextField
+                  label="Nombre"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Ej: Retrato realista, alto detalle"
+                  autoFocus
+                />
 
-              {/* Lo que se va a guardar, editable aca mismo. Antes el modal
+                {/* Lo que se va a guardar, editable aca mismo. Antes el modal
                   solo pedia nombre e imagen y los parametros viajaban en
                   silencio desde la vista Generar: no habia forma de saber
                   que quedaba adentro del preset sin volver atras. */}
-              <Select
-                label="Modelo"
-                value={recipeId ?? ''}
-                options={recipes.map((r) => ({ value: r.id, label: r.name }))}
-                onChange={chooseRecipe}
-                tip="Cambiarlo tambien cambia el modelo activo en Generar, y reinicia los parametros a los de ese modelo."
-              />
+                <Select
+                  label="Modelo"
+                  value={recipeId ?? ''}
+                  options={recipes.map((r) => ({ value: r.id, label: r.name }))}
+                  onChange={chooseRecipe}
+                  tip="Cambiarlo tambien cambia el modelo activo en Generar, y reinicia los parametros a los de ese modelo."
+                />
 
-              {params && currentRecipe && (
-                <>
-                  {/* Los mismos controles que la vista Generar, no un
+                {params && currentRecipe && (
+                  <>
+                    {/* Los mismos controles que la vista Generar, no un
                       resumen: el preset guarda todo esto, asi que hay que
                       poder verlo y tocarlo antes de guardar. */}
-                  <ParamFields
-                    recipe={currentRecipe}
-                    params={params}
-                    patchParams={patchParams}
-                    hideResolution={currentRecipe.architecture === 'flux-kontext'}
-                    resolutionColumns={2}
-                  />
+                    <LoraFields
+                      recipe={currentRecipe}
+                      params={params}
+                      models={models}
+                      addLora={addLora}
+                      removeLora={removeLora}
+                      patchLora={patchLora}
+                    />
+                    <ParamFields
+                      recipe={currentRecipe}
+                      params={params}
+                      patchParams={patchParams}
+                      hideResolution={currentRecipe.architecture === 'flux-kontext'}
+                      resolutionColumns={2}
+                    />
 
-                  <TextArea
-                    label="Prompt negativo"
-                    value={negative}
-                    onChange={(e) => setNegative(e.target.value)}
-                    rows={2}
-                    placeholder="worst quality, bad anatomy..."
-                  />
+                    <TextArea
+                      label="Prompt negativo"
+                      value={negative}
+                      onChange={(e) => setNegative(e.target.value)}
+                      rows={2}
+                      placeholder="worst quality, bad anatomy..."
+                    />
 
-                  <LoraFields
-                    recipe={currentRecipe}
-                    params={params}
-                    models={models}
-                    addLora={addLora}
-                    removeLora={removeLora}
-                    patchLora={patchLora}
-                  />
-                </>
-              )}
-
-              <label className="mb-1.5 block text-[11.6px] font-bold uppercase tracking-wider text-ink-500">
-                Imagen de referencia
-              </label>
-              <button
-                type="button"
-                onClick={() => void pickImage()}
-                className={cn(
-                  'mb-1 flex h-40 w-full items-center justify-center overflow-hidden rounded-box border-2 border-dashed transition-colors',
-                  imagePath
-                    ? 'border-transparent'
-                    : 'border-line/70 bg-white/40 hover:border-cobalt-500/50 dark:bg-white/4'
+                  </>
                 )}
-              >
-                {imagePath ? (
-                  <ImageWithSkeleton
-                    src={imageUrl(imagePath)}
-                    alt=""
-                    wrapperClassName="h-full w-full"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <span className="flex flex-col items-center gap-1 text-ink-400">
-                    <Icon name="add_photo_alternate" className="text-[28px]" />
-                    <span className="text-[12px] font-semibold">
-                      Click para elegir una imagen
-                    </span>
-                  </span>
-                )}
-              </button>
-              {imagePath && (
+
+                <label className="mb-1.5 block text-[11.6px] font-bold uppercase tracking-wider text-ink-500">
+                  Imagen de referencia
+                </label>
                 <button
-                  onClick={() => setImagePath(null)}
-                  className="text-[11px] font-semibold text-ink-400 underline hover:text-rose"
+                  type="button"
+                  onClick={() => void pickImage()}
+                  className={cn(
+                    'mb-1 flex h-40 w-full items-center justify-center overflow-hidden rounded-box border-2 border-dashed transition-colors',
+                    imagePath
+                      ? 'border-transparent'
+                      : 'border-line/70 bg-white/40 hover:border-cobalt-500/50 dark:bg-white/4'
+                  )}
                 >
-                  Quitar imagen
+                  {imagePath ? (
+                    <ImageWithSkeleton
+                      src={imageUrl(imagePath)}
+                      alt=""
+                      wrapperClassName="h-full w-full"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span className="flex flex-col items-center gap-1 text-ink-400">
+                      <Icon name="add_photo_alternate" className="text-[28px]" />
+                      <span className="text-[12px] font-semibold">
+                        Click para elegir una imagen
+                      </span>
+                    </span>
+                  )}
                 </button>
-              )}
+                {imagePath && (
+                  <button
+                    onClick={() => setImagePath(null)}
+                    className="text-[11px] font-semibold text-ink-400 underline hover:text-rose"
+                  >
+                    Quitar imagen
+                  </button>
+                )}
 
-              {error && (
-                <p className="mt-3 flex items-start gap-1.5 text-[12px] font-semibold text-rose-text">
-                  <Icon name="error" filled className="mt-px text-[15px]" />
-                  {error}
-                </p>
-              )}
-            </Modal>
-          </ModalRoot>
+                {error && (
+                  <p className="mt-3 flex items-start gap-1.5 text-[12px] font-semibold text-rose-text">
+                    <Icon name="error" filled className="mt-px text-[15px]" />
+                    {error}
+                  </p>
+                )}
+              </Modal>
+            </ModalRoot>
           </div>
         </div>
 

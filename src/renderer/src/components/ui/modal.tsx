@@ -67,26 +67,29 @@ interface ModalTriggerProps {
   children: ReactNode
   className?: string
   fullWidth?: boolean
-  /** Sin uso ya (quedo del morph compartido); se deja para no romper a quien lo pasaba. */
+  /** Radio del disparador. Framer lo anima hasta el del panel. */
   radius?: number
 }
 
+/** Queda visible: el backdrop lo tapa. Framer lee su posicion para animar desde ahi. */
 export function ModalTrigger({
   children,
   className,
-  fullWidth = false
+  fullWidth = false,
+  radius = 14
 }: ModalTriggerProps): React.JSX.Element {
-  const { isOpen, setIsOpen } = useModalCtx()
+  const { isOpen, setIsOpen, uniqueId } = useModalCtx()
   return (
-    <div
-      style={{ width: fullWidth ? '100%' : 'fit-content' }}
+    <motion.div
+      layoutId={`modal-${uniqueId}`}
+      style={{ borderRadius: radius, width: fullWidth ? '100%' : 'fit-content' }}
       className={cn('cursor-pointer', className)}
       onClick={() => !isOpen && setIsOpen(true)}
       role="button"
       aria-expanded={isOpen}
     >
       {children}
-    </div>
+    </motion.div>
   )
 }
 
@@ -113,7 +116,7 @@ export function Modal({
   closeOnBackdrop = true,
   closeOnEscape = true
 }: ModalProps): React.JSX.Element | null {
-  const { isOpen, setIsOpen } = useModalCtx()
+  const { isOpen, setIsOpen, uniqueId } = useModalCtx()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => setMounted(true), [])
@@ -132,15 +135,15 @@ export function Modal({
     <AnimatePresence initial={false}>
       {isOpen && (
         <>
+          {/* no-drag en el backdrop y en el panel: sin esto, la franja
+              arrastrable de la barra de titulo (arbol de React aparte,
+              dentro de #root) sigue activa para el sistema operativo en
+              esos mismos pixeles de pantalla aunque el modal se pinte
+              encima. -webkit-app-region no lo decide el z-index ni el
+              orden del DOM: hay que apagarlo a mano donde el modal tape
+              esa franja, si no un click ahi (por ej. en la X) se
+              interpreta como arrastrar/doble-click de la ventana. */}
           <motion.div
-            // no-drag: sin esto, la franja arrastrable de la barra de
-            // titulo (que vive en un arbol de React completamente aparte,
-            // dentro de #root) sigue activa para el sistema operativo en
-            // esos mismos pixeles de pantalla, aunque el modal se pinte
-            // encima. -webkit-app-region no lo decide el z-index ni el
-            // orden del DOM: hace falta apagarlo a mano donde el modal
-            // tape esa franja, si no un doble clic ahi minimiza/restaura
-            // la ventana en vez de tocar el modal.
             className="no-drag fixed inset-0 z-69 bg-[oklch(0.25_0.02_20/0.45)] backdrop-blur-[6px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -150,30 +153,19 @@ export function Modal({
           />
 
           <div className="no-drag pointer-events-none fixed inset-0 z-70 flex items-center justify-center p-4">
-            {/*
-              Antes esto compartia layoutId con el disparador (el boton se
-              "convertia" en el modal). Se saco: Framer mide el boton
-              disparador para armar esa animacion, y si esa medicion pasa
-              antes de que la tipografia de iconos (una fuente variable de
-              5MB, autohospedada) termine de asentar el layout, la medicion
-              queda vieja y la animacion se traba a mitad de camino — el
-              panel queda con scale casi en cero y opacity 0, montado y con
-              sus handlers funcionando, pero invisible y en el lugar
-              equivocado. Un escala+fade centrado no mide nada de otro
-              elemento, asi que no tiene con que trabarse.
-            */}
             <motion.div
+              layoutId={`modal-${uniqueId}`}
               className={cn(
-                'glass-strong pointer-events-auto relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-panel shadow-glass-lg',
+                'glass-strong pointer-events-auto relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-panel shadow-glass-lg will-change-transform',
                 SIZE_CLASS[size],
                 className
               )}
               style={{ borderRadius: 20 }}
               role="dialog"
               aria-modal="true"
-              initial={{ opacity: 0, scale: 0.94, y: 8 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.94, y: 8 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
             >
               {(title || showClose) && (
                 <div className="flex shrink-0 items-center gap-3 border-b border-line/45 py-4 pl-5 pr-4.5">
