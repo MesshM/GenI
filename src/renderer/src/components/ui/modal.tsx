@@ -133,7 +133,15 @@ export function Modal({
       {isOpen && (
         <>
           <motion.div
-            className="fixed inset-0 z-69 bg-[oklch(0.25_0.02_20/0.45)] backdrop-blur-[6px]"
+            // no-drag: sin esto, la franja arrastrable de la barra de
+            // titulo (que vive en un arbol de React completamente aparte,
+            // dentro de #root) sigue activa para el sistema operativo en
+            // esos mismos pixeles de pantalla, aunque el modal se pinte
+            // encima. -webkit-app-region no lo decide el z-index ni el
+            // orden del DOM: hace falta apagarlo a mano donde el modal
+            // tape esa franja, si no un doble clic ahi minimiza/restaura
+            // la ventana en vez de tocar el modal.
+            className="no-drag fixed inset-0 z-69 bg-[oklch(0.25_0.02_20/0.45)] backdrop-blur-[6px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -141,7 +149,7 @@ export function Modal({
             onClick={closeOnBackdrop ? () => setIsOpen(false) : undefined}
           />
 
-          <div className="pointer-events-none fixed inset-0 z-70 flex items-center justify-center p-4">
+          <div className="no-drag pointer-events-none fixed inset-0 z-70 flex items-center justify-center p-4">
             {/*
               Antes esto compartia layoutId con el disparador (el boton se
               "convertia" en el modal). Se saco: Framer mide el boton

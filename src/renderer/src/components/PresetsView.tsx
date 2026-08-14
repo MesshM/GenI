@@ -249,7 +249,7 @@ export default function PresetsView(): React.JSX.Element {
       </div>
 
       {confirmId && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-ink-900/25 p-6 backdrop-blur-sm">
+        <div className="no-drag fixed inset-0 z-50 grid place-items-center bg-ink-900/25 p-6 backdrop-blur-sm">
           <div className="glass-strong w-full max-w-sm rounded-panel p-5 shadow-glass-lg">
             <h3 className="text-[15px] font-extrabold text-ink-900">Eliminar preset</h3>
             <p className="mt-2 text-[13px] leading-snug text-ink-600">

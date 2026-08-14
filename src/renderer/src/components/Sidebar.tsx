@@ -225,7 +225,7 @@ export default function Sidebar(): React.JSX.Element {
       </ModalRoot>
 
       {confirmDelete && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-ink-900/25 p-6 backdrop-blur-sm">
+        <div className="no-drag fixed inset-0 z-50 grid place-items-center bg-ink-900/25 p-6 backdrop-blur-sm">
           <div className="glass-strong w-full max-w-sm rounded-panel p-5 shadow-glass-lg">
             <h3 className="text-[15.8px] font-extrabold text-ink-900">Borrar conversacion</h3>
             <p className="mt-2 text-[13.7px] leading-snug text-ink-600">

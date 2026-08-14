@@ -159,7 +159,10 @@ export function Select<T extends string>({
                 maxHeight: listMaxHeight,
                 zIndex: 95
               }}
-              className="glass-strong scroll overflow-y-auto rounded-box p-1.5 shadow-glass-lg"
+              // no-drag: si el select vive cerca del techo de la ventana
+              // (ej. adentro de un modal), la lista puede terminar debajo
+              // de la franja arrastrable de la barra de titulo.
+              className="no-drag glass-strong scroll overflow-y-auto rounded-box p-1.5 shadow-glass-lg"
             >
               {options.map((o) => {
                 const active = o.value === value
