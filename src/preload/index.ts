@@ -2,8 +2,13 @@ import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { CH, EV } from '@shared/channels'
 import type {
   AppSettings,
+  Collection,
+  CollectionItem,
+  ComfyInstallProgress,
   ComfyStatus,
+  GpuVendor,
   Conversation,
+  CreateCollectionInput,
   CreatePresetInput,
   DownloadJob,
   GenIApi,
@@ -14,7 +19,8 @@ import type {
   ParamPreset,
   Recipe,
   SubmitInput,
-  UpdateInfo
+  UpdateInfo,
+  WorkflowReport
 } from '@shared/types'
 
 /**
@@ -36,7 +42,22 @@ const api: GenIApi = {
     get: () => ipcRenderer.invoke(CH.settingsGet) as Promise<AppSettings>,
     update: (patch) => ipcRenderer.invoke(CH.settingsUpdate, patch) as Promise<AppSettings>,
     pickComfyFolder: () => ipcRenderer.invoke(CH.settingsPickComfyFolder) as Promise<string | null>,
-    detectComfy: () => ipcRenderer.invoke(CH.settingsDetectComfy) as Promise<string | null>
+    detectComfy: () => ipcRenderer.invoke(CH.settingsDetectComfy) as Promise<string | null>,
+    pickInstallFolder: () =>
+      ipcRenderer.invoke(CH.settingsPickInstallFolder) as Promise<string | null>
+  },
+  workflows: {
+    pickAndInspect: () => ipcRenderer.invoke(CH.workflowPick) as Promise<WorkflowReport | null>
+  },
+  install: {
+    detectEnv: () =>
+      ipcRenderer.invoke(CH.installDetectEnv) as Promise<{
+        gpu: GpuVendor
+        python: string | null
+        suggestedDir: string
+      }>,
+    comfy: (targetDir) => ipcRenderer.invoke(CH.installComfy, targetDir) as Promise<string>,
+    onProgress: (cb) => subscribe<ComfyInstallProgress>(EV.installProgress, cb)
   },
   comfy: {
     status: () => ipcRenderer.invoke(CH.comfyStatus) as Promise<ComfyStatus>,
@@ -80,6 +101,24 @@ const api: GenIApi = {
     decompress: (id) => ipcRenderer.invoke(CH.convDecompress, id) as Promise<void>,
     compress: (id) => ipcRenderer.invoke(CH.convCompress, id) as Promise<void>,
     setActive: (id) => ipcRenderer.invoke(CH.convSetActive, id) as Promise<void>
+  },
+  collections: {
+    list: () => ipcRenderer.invoke(CH.collList) as Promise<Collection[]>,
+    create: (input: CreateCollectionInput) =>
+      ipcRenderer.invoke(CH.collCreate, input) as Promise<Collection>,
+    update: (id, patch) =>
+      ipcRenderer.invoke(CH.collUpdate, id, patch) as Promise<Collection | null>,
+    remove: (id) => ipcRenderer.invoke(CH.collRemove, id) as Promise<void>,
+    items: (collectionId) =>
+      ipcRenderer.invoke(CH.collItems, collectionId) as Promise<CollectionItem[]>,
+    add: (collectionId, generationIds) =>
+      ipcRenderer.invoke(CH.collAdd, collectionId, generationIds) as Promise<void>,
+    removeItem: (collectionId, generationId) =>
+      ipcRenderer.invoke(CH.collRemoveItem, collectionId, generationId) as Promise<void>,
+    forGeneration: (generationId) =>
+      ipcRenderer.invoke(CH.collForGeneration, generationId) as Promise<string[]>,
+    startConversation: (collectionId) =>
+      ipcRenderer.invoke(CH.collStartConversation, collectionId) as Promise<Conversation>
   },
   generate: {
     submit: (input: SubmitInput) => ipcRenderer.invoke(CH.genSubmit, input) as Promise<Message>,

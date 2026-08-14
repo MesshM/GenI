@@ -116,6 +116,22 @@ interface SliderProps {
   counterWidth?: number
 }
 
+/** Triangulito del contador numerico. 7x4 px reales, sin aire de fuente. */
+function Caret({ up }: { up?: boolean }): React.JSX.Element {
+  return (
+    <svg
+      width="7"
+      height="4"
+      viewBox="0 0 7 4"
+      fill="currentColor"
+      aria-hidden
+      className="shrink-0"
+    >
+      <path d={up ? 'M3.5 0 7 4H0z' : 'M3.5 4 0 0h7z'} />
+    </svg>
+  )
+}
+
 /** Redondea al step evitando el arrastre de coma flotante (0.1+0.2 etc). */
 function roundToStep(n: number, step: number): number {
   const precision = (step.toString().split('.')[1] ?? '').length
@@ -150,30 +166,32 @@ export function Slider({
             max={max}
             step={step}
             onChange={(e) => onChange(clamp(Number(e.target.value)))}
-            // El input mantiene su alto de siempre (py-[8px]); lo unico que
-            // cambia es la columna de flechas de al lado, mas ancha para
-            // que ambas entren comodas sin tener que apretar el numero.
             className="w-full rounded-[8px] border border-line/70 bg-white/80 py-[8px] pl-2 pr-[24px] text-right text-[12.6px] font-bold text-ink-800 outline-none focus:border-halo/50 focus:ring-2 focus:ring-halo/14 dark:bg-white/6"
           />
-          {/* Flechas propias: las del navegador no se pueden estilar. */}
-          <div className="absolute inset-y-0 right-0 flex w-[22px] flex-col overflow-hidden rounded-r-[7px] border-l border-line/50">
+          {/* Flechas propias: las del navegador no se pueden estilar.
+              Se dibujan como SVG y no como glifo de Material Symbols: el
+              glifo trae su propia caja em con aire alrededor, asi que a
+              tamaños chicos el triangulo real queda diminuto y descentrado
+              por mas que se agrande la fuente. El SVG ocupa exactamente lo
+              que se le pide. */}
+          <div className="absolute inset-y-[1px] right-[1px] flex w-[20px] flex-col overflow-hidden rounded-r-[7px] border-l border-line/50">
             <button
               type="button"
               tabIndex={-1}
               aria-label="Aumentar"
               onClick={() => bump(step)}
-              className="flex flex-1 items-center justify-center bg-black/[0.03] text-ink-400 transition-colors hover:bg-tint/20 hover:text-cobalt-600 dark:bg-white/6 dark:hover:bg-white/16"
+              className="flex flex-1 items-center justify-center bg-black/[0.03] text-ink-500 transition-colors hover:bg-tint/25 hover:text-cobalt-600 dark:bg-white/6 dark:hover:bg-white/16"
             >
-              <Icon name="arrow_drop_up" className="text-[12px]" />
+              <Caret up />
             </button>
             <button
               type="button"
               tabIndex={-1}
               aria-label="Disminuir"
               onClick={() => bump(-step)}
-              className="flex flex-1 items-center justify-center border-t border-line/40 bg-black/[0.03] text-ink-400 transition-colors hover:bg-tint/20 hover:text-cobalt-600 dark:bg-white/6 dark:hover:bg-white/16"
+              className="flex flex-1 items-center justify-center border-t border-line/40 bg-black/[0.03] text-ink-500 transition-colors hover:bg-tint/25 hover:text-cobalt-600 dark:bg-white/6 dark:hover:bg-white/16"
             >
-              <Icon name="arrow_drop_down" className="text-[12px]" />
+              <Caret />
             </button>
           </div>
         </div>

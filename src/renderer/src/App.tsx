@@ -8,6 +8,7 @@ import ParamsPanel from './components/ParamsPanel'
 import ChatPanel from './components/ChatPanel'
 import ModelsView from './components/ModelsView'
 import PresetsView from './components/PresetsView'
+import CollectionsView from './components/CollectionsView'
 import Onboarding from './components/Onboarding'
 import { Resizer } from './components/ui/resizer'
 
@@ -71,6 +72,8 @@ export default function App(): React.JSX.Element {
             <ModelsView />
           ) : view === 'presets' ? (
             <PresetsView />
+          ) : view === 'collections' ? (
+            <CollectionsView />
           ) : (
             <div className="flex min-h-0 flex-1">
               <ParamsPanel />

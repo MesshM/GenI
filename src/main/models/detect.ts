@@ -13,6 +13,10 @@ const MAX_HEADER_BYTES = 32 * 1024 * 1024
 
 export interface SafetensorsHeader {
   tensorNames: string[]
+  /** Forma de cada tensor. Sirve para deducir la arquitectura de una LoRA
+   *  cuando no declara metadatos: la dimension del contexto de atencion
+   *  cambia entre SD1.5 (768), SDXL (2048) y FLUX (4096). */
+  shapes: Record<string, number[]>
   metadata: Record<string, string>
 }
 
@@ -34,10 +38,14 @@ export async function readSafetensorsHeader(path: string): Promise<SafetensorsHe
     const parsed = JSON.parse(jsonBuf.toString('utf8')) as Record<string, unknown>
     const metadata = (parsed.__metadata__ ?? {}) as Record<string, string>
 
-    return {
-      tensorNames: Object.keys(parsed).filter((k) => k !== '__metadata__'),
-      metadata
+    const tensorNames = Object.keys(parsed).filter((k) => k !== '__metadata__')
+    const shapes: Record<string, number[]> = {}
+    for (const name of tensorNames) {
+      const entry = parsed[name] as { shape?: unknown } | undefined
+      if (Array.isArray(entry?.shape)) shapes[name] = entry.shape as number[]
     }
+
+    return { tensorNames, shapes, metadata }
   } catch {
     return null
   } finally {
@@ -79,7 +87,7 @@ export function classify(header: SafetensorsHeader, filename: string): Detection
   ) {
     return {
       kind: 'lora',
-      architecture: loraArchitecture(names, meta),
+      architecture: loraArchitecture(names, meta, header.shapes),
       triggerWords,
       reason: meta.ss_network_module
         ? `entrenada con ${meta.ss_network_module}`
@@ -150,7 +158,9 @@ export function classify(header: SafetensorsHeader, filename: string): Detection
   // bloques de arriba. Sin esto un VAE o codificador de una arquitectura
   // asi cae en "no reconocido" y termina mal ubicado (carpeta checkpoints).
   const lower = basename(filename).toLowerCase()
-  if (lower.includes('vae')) {
+  // "autoencoder" va primero: contiene "encoder" y si no se atrapa aca
+  // caeria en la rama de codificador de texto, que es justo lo que no es.
+  if (lower.includes('vae') || lower.includes('autoencoder')) {
     return {
       kind: 'vae',
       architecture: 'unknown',
@@ -158,7 +168,16 @@ export function classify(header: SafetensorsHeader, filename: string): Detection
       reason: 'no reconocido por tensores; el nombre del archivo sugiere VAE'
     }
   }
-  if (lower.includes('text_encoder') || lower.includes('clip') || lower.includes('_t5')) {
+  if (
+    lower.includes('text_encoder') ||
+    lower.includes('encoder') ||
+    lower.includes('clip') ||
+    lower.includes('_t5') ||
+    // Sufijos cortos que usan varios publicadores para el codificador:
+    // anima_baseV10_txt.safetensors, modelo_te.safetensors.
+    /_(txt|text|te)\b/.test(lower) ||
+    /_(txt|text|te)\./.test(lower)
+  ) {
     return {
       kind: 'text_encoder',
       architecture: 'unknown',
@@ -184,7 +203,11 @@ export function classify(header: SafetensorsHeader, filename: string): Detection
 }
 
 /** La arquitectura base de una LoRA sale de sus metadatos o de sus dimensiones. */
-function loraArchitecture(names: string[], meta: Record<string, string>): ModelArchitecture {
+function loraArchitecture(
+  names: string[],
+  meta: Record<string, string>,
+  shapes: Record<string, number[]> = {}
+): ModelArchitecture {
   const declared = `${meta.ss_base_model_version ?? ''} ${meta['modelspec.architecture'] ?? ''}`.toLowerCase()
 
   if (declared.includes('flux')) return 'flux'
@@ -196,6 +219,22 @@ function loraArchitecture(names: string[], meta: Record<string, string>): ModelA
   // Sin metadatos: las LoRAs de SDXL tocan los dos codificadores de texto.
   if (names.some((n) => n.includes('lora_te2_'))) return 'sdxl'
   if (names.some((n) => n.includes('double_blocks') || n.includes('single_blocks'))) return 'flux'
+
+  // Ultimo recurso, por dimensiones. En los bloques de atencion cruzada
+  // (to_k / to_v) la entrada es el vector de contexto del codificador de
+  // texto, y ese ancho es propio de cada arquitectura:
+  //   SD 1.5 -> 768   SDXL -> 2048   FLUX -> 4096
+  // En una LoRA el peso "down" tiene forma [rank, entrada], asi que la
+  // segunda dimension es justo ese ancho.
+  for (const [name, shape] of Object.entries(shapes)) {
+    if (!/to_k|to_v/.test(name)) continue
+    if (!/lora_down|lora_A/.test(name)) continue
+    const inFeatures = shape[1]
+    if (inFeatures === 2048) return 'sdxl'
+    if (inFeatures === 768) return 'sd15'
+    if (inFeatures === 4096) return 'flux'
+  }
+
   return 'unknown'
 }
 

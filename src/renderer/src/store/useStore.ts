@@ -2,8 +2,10 @@ import { create } from 'zustand'
 import { applyTheme } from '../lib/theme'
 import type {
   AppSettings,
+  Collection,
   ComfyStatus,
   Conversation,
+  CreateCollectionInput,
   CreatePresetInput,
   DownloadJob,
   GenerationParams,
@@ -16,7 +18,7 @@ import type {
   UpdateInfo
 } from '@shared/types'
 
-export type View = 'chat' | 'models' | 'presets'
+export type View = 'chat' | 'models' | 'presets' | 'collections'
 
 /** Limites de los paneles redimensionables. */
 export const SIDEBAR_MIN = 210
@@ -77,6 +79,7 @@ interface State {
   models: ModelAsset[]
   downloads: DownloadJob[]
   presets: ParamPreset[]
+  collections: Collection[]
 
   conversations: Conversation[]
   activeId: string | null
@@ -110,6 +113,13 @@ interface State {
   refreshPresets: () => Promise<void>
   createPreset: (input: Omit<CreatePresetInput, 'params' | 'negative' | 'recipeId' | 'recipeName'>) => Promise<void>
   removePreset: (id: string) => Promise<void>
+
+  refreshCollections: () => Promise<void>
+  createCollection: (input: CreateCollectionInput) => Promise<Collection>
+  removeCollection: (id: string) => Promise<void>
+  /** Abre una conversacion nueva heredando la receta de la coleccion. */
+  startFromCollection: (collectionId: string) => Promise<void>
+
   setPrompt: (v: string) => void
   setNegative: (v: string) => void
   patchParams: (patch: Partial<GenerationParams>) => void
@@ -134,6 +144,7 @@ export const useStore = create<State>((set, get) => ({
   models: [],
   downloads: [],
   presets: [],
+  collections: [],
 
   conversations: [],
   activeId: null,
@@ -178,14 +189,16 @@ export const useStore = create<State>((set, get) => ({
     // Sin ruta de ComfyUI no hay carpetas que escanear todavia.
     if (settings.comfyPath) await window.geni.models.scan()
 
-    const [recipes, models, conversations, comfy, downloads, presets] = await Promise.all([
-      window.geni.recipes.list(),
-      window.geni.models.list(),
-      window.geni.conversations.list(),
-      window.geni.comfy.status(),
-      window.geni.models.downloads(),
-      window.geni.presets.list()
-    ])
+    const [recipes, models, conversations, comfy, downloads, presets, collections] =
+      await Promise.all([
+        window.geni.recipes.list(),
+        window.geni.models.list(),
+        window.geni.conversations.list(),
+        window.geni.comfy.status(),
+        window.geni.models.downloads(),
+        window.geni.presets.list(),
+        window.geni.collections.list()
+      ])
 
     const first = recipes[0] ?? null
     set({
@@ -196,6 +209,7 @@ export const useStore = create<State>((set, get) => ({
       comfy,
       downloads,
       presets,
+      collections,
       recipeId: first?.id ?? null,
       params: first ? structuredClone(first.defaults) : null,
       negative: first?.negativeDefault ?? '',
@@ -362,6 +376,62 @@ export const useStore = create<State>((set, get) => ({
   async removePreset(id) {
     await window.geni.presets.remove(id)
     set((state) => ({ presets: state.presets.filter((p) => p.id !== id) }))
+  },
+
+  async refreshCollections() {
+    const collections = await window.geni.collections.list()
+    set({ collections })
+  },
+
+  async createCollection(input) {
+    const collection = await window.geni.collections.create(input)
+    await get().refreshCollections()
+    return collection
+  },
+
+  async removeCollection(id) {
+    await window.geni.collections.remove(id)
+    set((state) => ({ collections: state.collections.filter((c) => c.id !== id) }))
+  },
+
+  async startFromCollection(collectionId) {
+    const collection = get().collections.find((c) => c.id === collectionId)
+    if (!collection) return
+
+    const prevId = get().activeId
+    if (prevId) void window.geni.conversations.compress(prevId)
+
+    const conversation = await window.geni.collections.startConversation(collectionId)
+    void window.geni.conversations.setActive(conversation.id)
+
+    // El preset asociado gana sobre los parametros sueltos: es una eleccion
+    // explicita del usuario y ademas trae su propia receta.
+    const preset = collection.presetId
+      ? get().presets.find((p) => p.id === collection.presetId)
+      : undefined
+
+    const params = preset?.params ?? collection.params
+    const negative = preset?.negative ?? collection.negativeTemplate
+
+    set((state) => ({
+      conversations: [conversation, ...state.conversations],
+      activeId: conversation.id,
+      messages: [],
+      recipeId: preset?.recipeId ?? collection.recipeId ?? state.recipeId,
+      params: params
+        ? {
+            ...structuredClone(params),
+            // Semilla fija de la coleccion: es lo que mantiene la linea
+            // visual entre imagenes, asi que apaga el azar.
+            ...(collection.lockedSeed !== null
+              ? { seed: collection.lockedSeed, randomSeed: false }
+              : {})
+          }
+        : state.params,
+      negative,
+      prompt: collection.promptTemplate,
+      view: 'chat'
+    }))
   },
 
   setPrompt: (v) => set({ prompt: v }),

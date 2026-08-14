@@ -10,17 +10,34 @@ import type { GenerationParams, ModelAsset, Recipe } from '@shared/types'
  */
 
 const SDXL_RESOLUTIONS = [
-  { label: 'Celular (vertical)', width: 1080, height: 1920 },
-  { label: 'Escritorio', width: 1920, height: 1080 },
-  { label: 'Cuadrado', width: 1408, height: 1408 },
-  { label: 'Retrato 4:5', width: 1280, height: 1600 }
+  { label: 'Cuadrado 1:1', width: 1408, height: 1408 },
+  { label: 'Retrato 4:5', width: 1280, height: 1600 },
+  { label: 'Retrato 2:3', width: 1152, height: 1728 },
+  { label: 'Vertical 3:4', width: 1248, height: 1664 },
+  { label: 'Celular 9:16', width: 1080, height: 1920 },
+  { label: 'Celular alto 9:20', width: 1080, height: 2400 },
+  { label: 'Escritorio 16:9', width: 1920, height: 1080 },
+  { label: 'Horizontal 3:2', width: 1728, height: 1152 },
+  { label: 'Horizontal 4:3', width: 1664, height: 1248 },
+  { label: 'Panoramica 21:9', width: 2304, height: 960 },
+  { label: 'Cuadrado chico', width: 1024, height: 1024 },
+  { label: 'Miniatura 16:9', width: 1280, height: 720 }
 ]
 
+// FLUX rinde mejor pegado a multiplos de 64 y cerca de 1 MP; por eso las
+// medidas no coinciden con las de SDXL aunque la proporcion sea la misma.
 const FLUX_RESOLUTIONS = [
-  { label: 'Cuadrado', width: 1024, height: 1024 },
+  { label: 'Cuadrado 1:1', width: 1024, height: 1024 },
+  { label: 'Retrato 4:5', width: 896, height: 1088 },
+  { label: 'Retrato 2:3', width: 832, height: 1216 },
   { label: 'Vertical 3:4', width: 896, height: 1152 },
-  { label: 'Celular (vertical)', width: 832, height: 1472 },
-  { label: 'Horizontal 16:9', width: 1216, height: 704 }
+  { label: 'Celular 9:16', width: 832, height: 1472 },
+  { label: 'Celular alto 9:20', width: 768, height: 1664 },
+  { label: 'Escritorio 16:9', width: 1472, height: 832 },
+  { label: 'Horizontal 3:2', width: 1216, height: 832 },
+  { label: 'Horizontal 4:3', width: 1152, height: 896 },
+  { label: 'Panoramica 21:9', width: 1600, height: 704 },
+  { label: 'Cuadrado grande', width: 1216, height: 1216 }
 ]
 
 const NEGATIVE_SDXL =
@@ -74,11 +91,17 @@ export function listRecipes(): Recipe[] {
 
   // --- Una receta por checkpoint SDXL ----------------------------------
   for (const ckpt of pick('checkpoint')) {
+    const isSd15 = ckpt.architecture === 'sd15'
     recipes.push({
       id: `sdxl:${ckpt.id}`,
       name: prettyName(ckpt.filename),
-      description: 'SDXL con dos pasadas: compone a 1 MP y refina hasta la resolucion final.',
+      description: isSd15
+        ? 'SD 1.5 con dos pasadas: compone chico y refina hasta la resolucion final.'
+        : 'SDXL con dos pasadas: compone a 1 MP y refina hasta la resolucion final.',
+      // El grafo se arma igual para SD 1.5 y SDXL; lo que cambia es con
+      // que LoRAs es compatible, y eso viaja en baseArchitecture.
       architecture: 'sdxl',
+      baseArchitecture: isSd15 ? 'sd15' : 'sdxl',
       checkpoint: ckpt.filename,
       clipSkip: guessClipSkip(ckpt.filename),
       defaults: sdxlDefaults(),
@@ -107,6 +130,7 @@ export function listRecipes(): Recipe[] {
           ? 'Edita una imagen por instrucciones y conserva el resto intacto.'
           : 'FLUX en una sola pasada. Lo mas realista que hay instalado.',
         architecture: isKontext ? 'flux-kontext' : 'flux',
+        baseArchitecture: 'flux',
         unet: unet.filename,
         clipL: clipL.filename,
         clipT5: clipT5.filename,

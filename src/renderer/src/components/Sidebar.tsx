@@ -11,6 +11,7 @@ import logotipo from '@/assets/icons/logotipo.png'
 
 const NAV: { view: View; icon: string; label: string }[] = [
   { view: 'chat', icon: 'auto_awesome', label: 'Generar' },
+  { view: 'collections', icon: 'collections_bookmark', label: 'Colecciones' },
   { view: 'presets', icon: 'bookmark', label: 'Presets' },
   { view: 'models', icon: 'inventory_2', label: 'Modelos' }
 ]
@@ -28,6 +29,7 @@ export default function Sidebar(): React.JSX.Element {
   const activeId = useStore((s) => s.activeId)
   const recipes = useStore((s) => s.recipes)
   const presets = useStore((s) => s.presets)
+  const collections = useStore((s) => s.collections)
   const select = useStore((s) => s.selectConversation)
   const create = useStore((s) => s.newConversation)
   const remove = useStore((s) => s.removeConversation)
@@ -78,6 +80,11 @@ export default function Sidebar(): React.JSX.Element {
               {item.view === 'presets' && presets.length > 0 && (
                 <span className="ml-auto rounded-full bg-tint/16 px-2 py-0.5 text-[11.6px] font-extrabold text-cobalt-600">
                   {presets.length}
+                </span>
+              )}
+              {item.view === 'collections' && collections.length > 0 && (
+                <span className="ml-auto rounded-full bg-tint/16 px-2 py-0.5 text-[11.6px] font-extrabold text-cobalt-600">
+                  {collections.length}
                 </span>
               )}
             </button>

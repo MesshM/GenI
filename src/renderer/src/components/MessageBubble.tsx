@@ -1,19 +1,23 @@
+import { useState } from 'react'
 import { useStore, imageUrl } from '../store/useStore'
 import { Icon } from './ui/icon'
 import { ImageWithSkeleton } from './ui/image'
 import { cn } from '@/lib/utils'
-import type { GenerationProgress, Message } from '@shared/types'
+import type { Generation, GenerationProgress, Message } from '@shared/types'
 
 interface Props {
   message: Message
   progress?: GenerationProgress
+  /** Abre el modal para guardar esta imagen en una coleccion. */
+  onCollect?: (generation: Generation) => void
 }
 
-export default function MessageBubble({ message, progress }: Props): React.JSX.Element {
+export default function MessageBubble({ message, progress, onCollect }: Props): React.JSX.Element {
   const loadParamsFrom = useStore((s) => s.loadParamsFrom)
   const cancel = useStore((s) => s.cancel)
   const send = useStore((s) => s.send)
   const patchParams = useStore((s) => s.patchParams)
+  const [copied, setCopied] = useState<'prompt' | 'negative' | null>(null)
 
   const running = message.status === 'running' || message.status === 'pending'
   const pct = progress && progress.max > 0 ? Math.round((progress.value / progress.max) * 100) : 0
@@ -22,6 +26,12 @@ export default function MessageBubble({ message, progress }: Props): React.JSX.E
     loadParamsFrom(message)
     patchParams({ randomSeed: true })
     setTimeout(() => void send(), 0)
+  }
+
+  function copy(which: 'prompt' | 'negative', text: string): void {
+    void navigator.clipboard.writeText(text)
+    setCopied(which)
+    setTimeout(() => setCopied(null), 1400)
   }
 
   const activeLoras = message.params.loras.filter((l) => l.enabled)
@@ -113,7 +123,9 @@ export default function MessageBubble({ message, progress }: Props): React.JSX.E
       )}
 
       {message.generations.length > 0 && (
-        <div className={cn('mt-4 grid gap-2.5', cols)}>
+        // max-w acotado: a ancho completo la imagen empujaba el texto del
+        // chat fuera de vista y habia que scrollear para leer el hilo.
+        <div className={cn('mt-4 grid max-w-[380px] gap-2.5', cols)}>
           {message.generations.map((g) => (
             <figure
               key={g.id}
@@ -127,9 +139,17 @@ export default function MessageBubble({ message, progress }: Props): React.JSX.E
                 className="h-full w-full object-contain"
               />
               <figcaption className="absolute inset-x-0 bottom-0 flex justify-end gap-1.5 bg-gradient-to-t from-ink-900/75 to-transparent p-2 opacity-0 transition-opacity group-hover/img:opacity-100">
-                <ImgBtn icon="content_copy" label="Copiar" onClick={() => void window.geni.images.copy(g.absPath)} />
-                <ImgBtn icon="download" label="Guardar" onClick={() => void window.geni.images.saveAs(g.absPath)} />
-                <ImgBtn icon="folder_open" label="Carpeta" onClick={() => void window.geni.images.reveal(g.absPath)} />
+                <ImgBtn
+                  icon="content_copy"
+                  label="Copiar"
+                  onClick={() => void window.geni.images.copy(g.absPath)}
+                />
+                <ImgBtn
+                  icon="download"
+                  label="Guardar"
+                  onClick={() => void window.geni.images.saveAs(g.absPath)}
+                />
+                <ImgBtn icon="add" label="Guardar en coleccion" onClick={() => onCollect?.(g)} />
               </figcaption>
             </figure>
           ))}
@@ -137,13 +157,27 @@ export default function MessageBubble({ message, progress }: Props): React.JSX.E
       )}
 
       {!running && (
-        <div className="mt-3 flex gap-3">
+        <div className="mt-3 flex flex-wrap gap-3">
           <Action icon="refresh" onClick={reroll}>
             Otra semilla
           </Action>
           <Action icon="edit" onClick={() => loadParamsFrom(message)}>
             Editar parametros
           </Action>
+          <Action
+            icon={copied === 'prompt' ? 'check' : 'content_copy'}
+            onClick={() => copy('prompt', message.prompt)}
+          >
+            {copied === 'prompt' ? 'Copiado' : 'Copiar prompt'}
+          </Action>
+          {message.negative && (
+            <Action
+              icon={copied === 'negative' ? 'check' : 'content_copy'}
+              onClick={() => copy('negative', message.negative)}
+            >
+              {copied === 'negative' ? 'Copiado' : 'Copiar negativo'}
+            </Action>
+          )}
         </div>
       )}
     </article>
@@ -196,9 +230,15 @@ function ImgBtn({
       // Negro fijo (no un token que se invierte en oscuro): este boton flota
       // sobre una imagen generada de colores arbitrarios, no sobre el chrome
       // de la app, asi que necesita su propio contraste siempre igual.
-      className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/85 text-black backdrop-blur transition-colors hover:bg-white"
+      //
+      // En reposo es vidrio (blur sobre la imagen); el blanco solido del
+      // hover entra y sale como una capa aparte con su propia transicion,
+      // porque animar el background-color del boton corta la ilusion de
+      // vidrio a mitad de camino.
+      className="group/btn relative grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-black/25 text-white backdrop-blur-md transition-[color,transform] duration-200 hover:scale-105 hover:text-black"
     >
-      <Icon name={icon} className="text-[15.8px]" />
+      <span className="absolute inset-0 scale-50 rounded-full bg-white opacity-0 transition-[opacity,transform] duration-200 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover/btn:scale-100 group-hover/btn:opacity-100" />
+      <Icon name={icon} className="relative text-[15.8px]" />
     </button>
   )
 }

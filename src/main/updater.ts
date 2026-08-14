@@ -78,7 +78,11 @@ class Updater extends EventEmitter {
 
   install(): void {
     if (!this.state.downloaded) return
-    autoUpdater.quitAndInstall()
+    // (isSilent, isForceRunAfter). Con isSilent el instalador NSIS corre sin
+    // mostrar su ventana ni pedir "Siguiente": el usuario aprieta Reiniciar
+    // en la app y vuelve solo con la version nueva. isForceRunAfter la
+    // relanza cuando termina.
+    autoUpdater.quitAndInstall(true, true)
   }
 }
 

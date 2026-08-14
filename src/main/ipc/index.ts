@@ -7,6 +7,13 @@ import { conversationsRepo, messagesRepo } from '../db/repositories'
 import { comfyProcess } from '../comfy/process'
 import { comfyClient } from '../comfy/client'
 import { generator } from '../comfy/generator'
+import {
+  comfyInstaller,
+  defaultInstallDir,
+  detectGpuVendor,
+  detectPython
+} from '../comfy/installer'
+import { inspectWorkflowFile } from '../comfy/workflow-import'
 import { translateEsToEn } from '../translate/translate'
 import { listRecipes } from '../comfy/recipes'
 import {
@@ -18,6 +25,17 @@ import {
 } from '../models/manager'
 import { downloader } from '../models/download'
 import { createPreset, deletePreset, isImageFile, listPresets } from '../presets/manager'
+import {
+  addToCollection,
+  collectionsForGeneration,
+  createCollection,
+  deleteCollection,
+  getCollection,
+  listCollectionItems,
+  listCollections,
+  removeFromCollection,
+  updateCollection
+} from '../collections/manager'
 import {
   compressConversation,
   decompressConversation,
@@ -162,6 +180,65 @@ export function registerIpc(getWindow: () => BrowserWindow | null): void {
     return result.canceled ? null : (result.filePaths[0] ?? null)
   })
 
+  ipcMain.handle(CH.settingsPickInstallFolder, async () => {
+    const win = getWindow()
+    if (!win) return null
+    const result = await dialog.showOpenDialog(win, {
+      title: 'Elige donde instalar ComfyUI',
+      properties: ['openDirectory', 'createDirectory']
+    })
+    return result.canceled ? null : (result.filePaths[0] ?? null)
+  })
+
+  // --- workflows de ComfyUI (.json exportado)
+  ipcMain.handle(CH.workflowPick, async () => {
+    const win = getWindow()
+    if (!win) return null
+
+    const picked = await dialog.showOpenDialog(win, {
+      title: 'Elige un workflow de ComfyUI',
+      properties: ['openFile'],
+      filters: [{ name: 'Workflow de ComfyUI', extensions: ['json'] }]
+    })
+    if (picked.canceled || !picked.filePaths[0]) return null
+
+    return inspectWorkflowFile(picked.filePaths[0])
+  })
+
+  // --- instalacion de ComfyUI desde cero
+  ipcMain.handle(CH.installDetectEnv, async () => {
+    const [gpu, python, suggestedDir] = await Promise.all([
+      detectGpuVendor(),
+      detectPython(),
+      defaultInstallDir(app.getPath('home'))
+    ])
+    return { gpu, python, suggestedDir }
+  })
+
+  ipcMain.handle(CH.installComfy, async (_e, targetDir: unknown) => {
+    const dir = asString(targetDir, 'targetDir', 1000)
+    const [gpu, python] = await Promise.all([detectGpuVendor(), detectPython()])
+    if (!python) {
+      throw new Error(
+        'No encontre Python en el sistema. Instalalo desde python.org (3.10 o mas nuevo) y volve a intentar.'
+      )
+    }
+    const installed = await comfyInstaller.install(dir, python, gpu)
+    updateSettings({ comfyPath: installed })
+    return installed
+  })
+
+  comfyInstaller.on('progress', (p) => send(EV.installProgress, p))
+  comfyInstaller.on('log', (line: string) =>
+    send(EV.installProgress, {
+      step: '',
+      log: line,
+      percent: -1,
+      done: false,
+      error: null
+    })
+  )
+
   // --- proceso ComfyUI
   ipcMain.handle(CH.comfyStatus, () => comfyProcess.getStatus())
   ipcMain.handle(CH.comfyStart, () => comfyProcess.start())
@@ -274,6 +351,76 @@ export function registerIpc(getWindow: () => BrowserWindow | null): void {
     setLastActiveConversation(asId(id, 'id'))
   })
 
+  // --- colecciones
+  ipcMain.handle(CH.collList, () => listCollections())
+  ipcMain.handle(CH.collCreate, (_e, input: unknown) => {
+    const raw = (input ?? {}) as Record<string, unknown>
+    return createCollection({
+      name: asString(raw.name, 'name', 200),
+      description: raw.description === undefined ? '' : asString(raw.description, 'description', 2000),
+      fromMessageId: raw.fromMessageId ? asId(raw.fromMessageId, 'fromMessageId') : undefined,
+      promptTemplate:
+        raw.promptTemplate === undefined ? '' : asString(raw.promptTemplate, 'promptTemplate', 4000),
+      negativeTemplate:
+        raw.negativeTemplate === undefined
+          ? ''
+          : asString(raw.negativeTemplate, 'negativeTemplate', 4000),
+      presetId: raw.presetId ? asId(raw.presetId, 'presetId') : null,
+      lockedSeed: typeof raw.lockedSeed === 'number' ? raw.lockedSeed : null
+    })
+  })
+  ipcMain.handle(CH.collUpdate, (_e, id: unknown, patch: unknown) => {
+    const raw = (patch ?? {}) as Record<string, unknown>
+    return updateCollection(asId(id, 'id'), {
+      name: raw.name === undefined ? undefined : asString(raw.name, 'name', 200),
+      description:
+        raw.description === undefined ? undefined : asString(raw.description, 'description', 2000),
+      promptTemplate:
+        raw.promptTemplate === undefined
+          ? undefined
+          : asString(raw.promptTemplate, 'promptTemplate', 4000),
+      negativeTemplate:
+        raw.negativeTemplate === undefined
+          ? undefined
+          : asString(raw.negativeTemplate, 'negativeTemplate', 4000),
+      presetId: raw.presetId === undefined ? undefined : raw.presetId ? asId(raw.presetId, 'presetId') : null,
+      lockedSeed:
+        raw.lockedSeed === undefined ? undefined : typeof raw.lockedSeed === 'number' ? raw.lockedSeed : null
+    })
+  })
+  ipcMain.handle(CH.collRemove, (_e, id: unknown) => deleteCollection(asId(id, 'id')))
+  ipcMain.handle(CH.collItems, (_e, id: unknown) => listCollectionItems(asId(id, 'id')))
+  ipcMain.handle(CH.collAdd, (_e, collectionId: unknown, generationIds: unknown) => {
+    const ids = Array.isArray(generationIds) ? generationIds : []
+    addToCollection(
+      asId(collectionId, 'collectionId'),
+      ids.slice(0, 200).map((g) => asId(g, 'generationId'))
+    )
+  })
+  ipcMain.handle(CH.collRemoveItem, (_e, collectionId: unknown, generationId: unknown) =>
+    removeFromCollection(asId(collectionId, 'collectionId'), asId(generationId, 'generationId'))
+  )
+  ipcMain.handle(CH.collForGeneration, (_e, generationId: unknown) =>
+    collectionsForGeneration(asId(generationId, 'generationId'))
+  )
+  ipcMain.handle(CH.collStartConversation, (_e, collectionId: unknown) => {
+    const collection = getCollection(asId(collectionId, 'collectionId'))
+    if (!collection) throw new Error('Esa coleccion ya no existe')
+
+    // La conversacion nace apuntando a la receta de la coleccion; si esa
+    // receta ya no esta (se borro el modelo), cae en la primera disponible
+    // para que igual se pueda abrir en vez de fallar.
+    const recipes = listRecipes()
+    const recipeId =
+      (collection.recipeId && recipes.find((r) => r.id === collection.recipeId)?.id) ??
+      recipes[0]?.id
+    if (!recipeId) throw new Error('No hay ningun modelo instalado')
+
+    const conversation = conversationsRepo.create(recipeId)
+    conversationsRepo.rename(conversation.id, collection.name)
+    return { ...conversation, title: collection.name }
+  })
+
   // --- generacion
   ipcMain.handle(CH.genSubmit, (_e, input: unknown) => generator.submit(asSubmitInput(input)))
   ipcMain.handle(CH.genCancel, (_e, messageId: unknown) =>
@@ -304,16 +451,36 @@ export function registerIpc(getWindow: () => BrowserWindow | null): void {
     const win = getWindow()
     if (!win) return null
 
-    const ext = extname(source).replace('.', '').toLowerCase() || 'webp'
+    // En disco se guarda WEBP (ocupa mucho menos), pero al exportar se
+    // ofrece PNG por defecto: es el formato que espera cualquier editor.
+    // Se elige por la extension del archivo destino, asi el usuario puede
+    // pedir WEBP desde el mismo dialogo si quiere conservar el original.
     const result = await dialog.showSaveDialog(win, {
       title: 'Guardar imagen',
-      defaultPath: basename(source),
-      filters: [{ name: `Imagen ${ext.toUpperCase()}`, extensions: [ext] }]
+      defaultPath: basename(source).replace(/\.webp$/i, '.png'),
+      filters: [
+        { name: 'Imagen PNG', extensions: ['png'] },
+        { name: 'Imagen JPEG', extensions: ['jpg'] },
+        { name: 'Imagen WEBP', extensions: ['webp'] }
+      ]
     })
     if (result.canceled || !result.filePath) return null
 
-    await copyFile(source, result.filePath)
-    return result.filePath
+    const target = result.filePath
+    const targetExt = extname(target).toLowerCase()
+    const sourceExt = extname(source).toLowerCase()
+
+    if (targetExt === sourceExt) {
+      await copyFile(source, target)
+    } else if (targetExt === '.jpg' || targetExt === '.jpeg') {
+      await sharp(source).jpeg({ quality: 95 }).toFile(target)
+    } else if (targetExt === '.webp') {
+      await sharp(source).webp({ quality: 95 }).toFile(target)
+    } else {
+      await sharp(source).png().toFile(target)
+    }
+
+    return target
   })
 
   // --- actualizaciones

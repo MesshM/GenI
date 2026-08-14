@@ -77,14 +77,22 @@ export default function ParamsPanel(): React.JSX.Element {
   // puede cargar (no hay receta a la que aplicarle los parametros).
   const availablePresets = presets.filter((p) => recipes.some((r) => r.id === p.recipeId))
 
-  /** Solo se ofrecen LoRAs compatibles con la arquitectura de la receta. */
+  /**
+   * Solo se ofrecen LoRAs compatibles con el modelo elegido. La
+   * arquitectura de cada LoRA se deduce al importarla (metadatos del
+   * entrenador, nombres de tensores y, si no, el ancho del vector de
+   * contexto: 768 en SD 1.5, 2048 en SDXL, 4096 en FLUX).
+   *
+   * Las que quedan en 'unknown' no se esconden: no se pudo probar que
+   * sean incompatibles, y ocultarlas haria desaparecer LoRAs que
+   * funcionan. Se marcan en la lista para que se sepa.
+   */
   const availableLoras = useMemo(() => {
     if (!recipe || !params) return []
-    const wanted = recipe.architecture === 'sdxl' ? 'sdxl' : 'flux'
     return models.filter(
       (m) =>
         m.kind === 'lora' &&
-        (m.architecture === wanted || m.architecture === 'unknown') &&
+        (m.architecture === recipe.baseArchitecture || m.architecture === 'unknown') &&
         !params.loras.some((l) => l.modelId === m.id)
     )
   }, [models, recipe, params])
@@ -180,6 +188,13 @@ export default function ParamsPanel(): React.JSX.Element {
                   <span className="min-w-0 flex-1 truncate text-[12.6px] font-semibold text-ink-800">
                     {m.filename.replace(/\.[^.]+$/, '')}
                   </span>
+                  {m.architecture === 'unknown' && (
+                    <Icon
+                      name="help"
+                      className="shrink-0 text-[14.7px] text-amber"
+                      title="No se pudo confirmar para que modelo es esta LoRA. Puede que no funcione con el modelo elegido."
+                    />
+                  )}
                   {m.triggerWords.length > 0 && (
                     <Icon
                       name="label"

@@ -77,6 +77,10 @@ export interface Recipe {
   name: string
   description: string
   architecture: RecipeArchitecture
+  /** Arquitectura real del modelo base. `architecture` dice como armar el
+   *  grafo (SD 1.5 y SDXL se arman igual); esta dice con que LoRAs es
+   *  compatible, que no es lo mismo. */
+  baseArchitecture: ModelArchitecture
   /** SDXL: checkpoint todo en uno. */
   checkpoint?: string
   /** FLUX: modelo de difusion + codificadores + VAE por separado. */
@@ -150,6 +154,57 @@ export interface CreatePresetInput {
   referenceImageSourcePath?: string
 }
 
+// --------------------------------------------------------- colecciones
+
+/**
+ * Una coleccion agrupa imagenes ya generadas y, opcionalmente, recuerda
+ * con que receta se hicieron. Lo segundo es lo que permite abrir una
+ * conversacion nueva que siga la misma linea visual.
+ */
+export interface Collection {
+  id: string
+  name: string
+  description: string
+  /** Parametros heredados al abrir una conversacion desde la coleccion. */
+  params: GenerationParams | null
+  promptTemplate: string
+  negativeTemplate: string
+  recipeId: string | null
+  /** Si esta, gana sobre `params`: se aplica el preset guardado. */
+  presetId: string | null
+  lockedSeed: number | null
+  createdAt: number
+  itemCount: number
+  /** Ruta de la primera imagen, para la portada de la tarjeta. */
+  cover: string | null
+}
+
+/** Una imagen dentro de una coleccion, con el contexto de donde salio. */
+export interface CollectionItem {
+  id: string
+  generationId: string
+  absPath: string
+  width: number
+  height: number
+  seed: number
+  prompt: string
+  negative: string
+  conversationId: string
+  conversationTitle: string
+  addedAt: number
+}
+
+export interface CreateCollectionInput {
+  name: string
+  description?: string
+  /** Toma los parametros de este mensaje como receta de la coleccion. */
+  fromMessageId?: string
+  promptTemplate?: string
+  negativeTemplate?: string
+  presetId?: string | null
+  lockedSeed?: number | null
+}
+
 // ------------------------------------------------------------ mensajes
 
 export type MessageStatus = 'pending' | 'running' | 'done' | 'error' | 'cancelled'
@@ -205,6 +260,35 @@ export interface AppSettings {
   huggingFaceToken: string
 }
 
+/** Un modelo que pide un workflow importado. */
+export interface WorkflowRequirement {
+  filename: string
+  kind: ModelKind
+  installed: boolean
+}
+
+export interface WorkflowReport {
+  /** Solo el formato de API se puede mandar a ComfyUI tal cual. */
+  apiFormat: boolean
+  nodeCount: number
+  requirements: WorkflowRequirement[]
+  workflow: ComfyWorkflow | null
+}
+
+/** Marca de la placa de video: decide que rueda de PyTorch se instala. */
+export type GpuVendor = 'amd' | 'nvidia' | 'unknown'
+
+export interface ComfyInstallProgress {
+  step: string
+  log: string
+  /** -1 cuando el paso no tiene porcentaje medible. */
+  percent: number
+  done: boolean
+  error: string | null
+  /** Al terminar, el Python del entorno recien creado. */
+  pythonPath?: string
+}
+
 export type ComfyStatus =
   | { state: 'stopped' }
   | { state: 'starting'; log: string[] }
@@ -243,6 +327,22 @@ export interface GenIApi {
     update(patch: Partial<AppSettings>): Promise<AppSettings>
     pickComfyFolder(): Promise<string | null>
     detectComfy(): Promise<string | null>
+    /** Carpeta vacia donde instalar ComfyUI desde cero. */
+    pickInstallFolder(): Promise<string | null>
+  }
+  workflows: {
+    /** Abre un .json de ComfyUI y dice que modelos le faltan. */
+    pickAndInspect(): Promise<WorkflowReport | null>
+  }
+  install: {
+    /** Que hay en la maquina antes de instalar: placa, Python y ruta sugerida. */
+    detectEnv(): Promise<{
+      gpu: GpuVendor
+      python: string | null
+      suggestedDir: string
+    }>
+    comfy(targetDir: string): Promise<string>
+    onProgress(cb: (p: ComfyInstallProgress) => void): () => void
   }
   comfy: {
     status(): Promise<ComfyStatus>
@@ -287,6 +387,29 @@ export interface GenIApi {
     compress(id: string): Promise<void>
     /** Recuerda cual es la activa, para saber que comprimir al cerrar la app. */
     setActive(id: string): Promise<void>
+  }
+  collections: {
+    list(): Promise<Collection[]>
+    create(input: CreateCollectionInput): Promise<Collection>
+    update(
+      id: string,
+      patch: {
+        name?: string
+        description?: string
+        promptTemplate?: string
+        negativeTemplate?: string
+        presetId?: string | null
+        lockedSeed?: number | null
+      }
+    ): Promise<Collection | null>
+    remove(id: string): Promise<void>
+    items(collectionId: string): Promise<CollectionItem[]>
+    add(collectionId: string, generationIds: string[]): Promise<void>
+    removeItem(collectionId: string, generationId: string): Promise<void>
+    /** Ids de las colecciones que ya contienen esa imagen. */
+    forGeneration(generationId: string): Promise<string[]>
+    /** Crea una conversacion nueva con los parametros de la coleccion. */
+    startConversation(collectionId: string): Promise<Conversation>
   }
   generate: {
     submit(input: SubmitInput): Promise<Message>

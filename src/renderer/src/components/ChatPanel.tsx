@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store/useStore'
 import MessageBubble from './MessageBubble'
+import CollectModal from './CollectModal'
 import { Icon } from './ui/icon'
 import { Button } from './ui/button'
 import { TranslateButton } from './ui/translate-button'
 import { useAutoGrow } from '@/lib/useAutoGrow'
+import type { Generation, Message } from '@shared/types'
 
 export default function ChatPanel(): React.JSX.Element {
   const messages = useStore((s) => s.messages)
@@ -14,13 +16,54 @@ export default function ChatPanel(): React.JSX.Element {
   const send = useStore((s) => s.send)
   const comfy = useStore((s) => s.comfy)
   const recipes = useStore((s) => s.recipes)
+  const activeId = useStore((s) => s.activeId)
 
+  const scrollRef = useRef<HTMLDivElement>(null)
   const endRef = useRef<HTMLDivElement>(null)
   const promptRef = useAutoGrow(prompt)
 
+  // Imagen que se esta por guardar en una coleccion (abre el modal).
+  const [collecting, setCollecting] = useState<{
+    generation: Generation
+    message: Message
+  } | null>(null)
+
+  // Al abrir la app o cambiar de conversacion el hilo tiene que aparecer ya
+  // abajo, no scrollear a la vista. Va en useLayoutEffect (antes de pintar)
+  // y sin `behavior: smooth`, si no se ve el recorrido desde arriba.
+  useLayoutEffect(() => {
+    const el = scrollRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }, [activeId])
+
+  // Las imagenes entran despues de montar y cambian el alto del hilo: sin
+  // esto el ultimo mensaje queda tapado al volver a una conversacion vieja.
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages.length])
+    const el = scrollRef.current
+    if (!el) return
+    const observer = new ResizeObserver(() => {
+      const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 220
+      if (atBottom) el.scrollTop = el.scrollHeight
+    })
+    observer.observe(el)
+    for (const child of Array.from(el.children)) observer.observe(child)
+    return () => observer.disconnect()
+  }, [activeId])
+
+  // Mensaje nuevo dentro de la MISMA conversacion: aca si conviene animar,
+  // porque el usuario esta mirando y el movimiento le avisa que llego algo.
+  // Si lo que cambio fue la conversacion, no: de eso ya se ocupo el salto
+  // instantaneo de arriba, y animar ademas es el rebote que se veia al
+  // borrar una conversacion o al abrir la app.
+  const lastSeen = useRef<{ id: string | null; count: number }>({ id: null, count: 0 })
+  useEffect(() => {
+    const prev = lastSeen.current
+    const sameConversation = prev.id === activeId
+    lastSeen.current = { id: activeId, count: messages.length }
+    if (sameConversation && messages.length > prev.count) {
+      endRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [messages.length, activeId])
 
   // Cualquier mensaje de la conversacion activa generando: el boton pasa a
   // "Generando" y se bloquea para no acumular envios sobre el mismo lote.
@@ -40,7 +83,7 @@ export default function ChatPanel(): React.JSX.Element {
 
   return (
     <main className="flex min-w-0 flex-1 flex-col px-2 pb-4">
-      <div className="scroll flex-1 px-4 pt-2">
+      <div ref={scrollRef} className="scroll flex-1 px-4 pt-2">
         {messages.length === 0 ? (
           <div className="mx-auto mt-24 max-w-md animate-fade-up text-center">
             <span className="grid mx-auto h-14 w-14 place-items-center rounded-panel bg-white/70 shadow-lift dark:bg-white/6">
@@ -57,7 +100,12 @@ export default function ChatPanel(): React.JSX.Element {
         ) : (
           <div className="mx-auto max-w-2xl">
             {messages.map((m) => (
-              <MessageBubble key={m.id} message={m} progress={progress[m.id]} />
+              <MessageBubble
+                key={m.id}
+                message={m}
+                progress={progress[m.id]}
+                onCollect={(generation) => setCollecting({ generation, message: m })}
+              />
             ))}
             <div ref={endRef} />
           </div>
@@ -104,6 +152,14 @@ export default function ChatPanel(): React.JSX.Element {
           </div>
         </div>
       </div>
+
+      {collecting && (
+        <CollectModal
+          generation={collecting.generation}
+          message={collecting.message}
+          onClose={() => setCollecting(null)}
+        />
+      )}
     </main>
   )
 }

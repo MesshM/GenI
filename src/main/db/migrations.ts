@@ -116,5 +116,42 @@ export const MIGRATIONS: Migration[] = [
       // coincide con lo ya instalado, no hace falta bajarlo de nuevo.
       db.exec(`ALTER TABLE models ADD COLUMN source_version TEXT;`)
     }
+  },
+  {
+    version: 5,
+    up(db) {
+      // Colecciones: agrupan imagenes ya generadas y guardan la receta con
+      // la que se hicieron, para poder seguir produciendo en la misma linea.
+      //
+      // params_json y las plantillas de prompt son opcionales: una coleccion
+      // puede ser solo un album. Si ademas tiene parametros (o un preset
+      // asociado), sirve para abrir una conversacion nueva ya configurada.
+      db.exec(`
+        CREATE TABLE collections (
+          id                TEXT PRIMARY KEY,
+          name              TEXT NOT NULL,
+          description       TEXT NOT NULL DEFAULT '',
+          params_json       TEXT,
+          prompt_template   TEXT NOT NULL DEFAULT '',
+          negative_template TEXT NOT NULL DEFAULT '',
+          recipe_id         TEXT,
+          preset_id         TEXT,
+          -- Semilla fija: si esta, las conversaciones que nacen de esta
+          -- coleccion arrancan con ella en vez de una al azar.
+          locked_seed       INTEGER,
+          created_at        INTEGER NOT NULL
+        );
+
+        CREATE TABLE collection_items (
+          id            TEXT PRIMARY KEY,
+          collection_id TEXT NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
+          generation_id TEXT NOT NULL REFERENCES generations(id) ON DELETE CASCADE,
+          created_at    INTEGER NOT NULL,
+          UNIQUE(collection_id, generation_id)
+        );
+
+        CREATE INDEX idx_collection_items_collection ON collection_items(collection_id, created_at DESC);
+      `)
+    }
   }
 ]

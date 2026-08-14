@@ -4,17 +4,40 @@ import { Icon } from './ui/icon'
 import { Button } from './ui/button'
 import { ImageWithSkeleton } from './ui/image'
 import { Modal, ModalRoot, ModalTrigger } from './ui/modal'
-import { TextField } from './ui/field'
+import { Slider, TextField } from './ui/field'
+import { Select } from './ui/select'
+import WorkflowImport from './WorkflowImport'
 import { cn } from '@/lib/utils'
+
+/** Etiqueta chica para resumir que entra en el preset. */
+function Tag({ children, muted }: { children: React.ReactNode; muted?: boolean }): React.JSX.Element {
+  return (
+    <span
+      className={cn(
+        'rounded-full border border-line/50 px-2 py-0.5 text-[10.5px] font-bold',
+        muted ? 'text-ink-400' : 'bg-white/60 text-ink-600 dark:bg-white/6'
+      )}
+    >
+      {children}
+    </span>
+  )
+}
 
 export default function PresetsView(): React.JSX.Element {
   const presets = useStore((s) => s.presets)
   const recipes = useStore((s) => s.recipes)
   const recipeId = useStore((s) => s.recipeId)
+  const params = useStore((s) => s.params)
+  const negative = useStore((s) => s.negative)
+  const chooseRecipe = useStore((s) => s.chooseRecipe)
+  const patchParams = useStore((s) => s.patchParams)
   const createPreset = useStore((s) => s.createPreset)
   const removePreset = useStore((s) => s.removePreset)
 
+  const activeLoras = params?.loras.filter((l) => l.enabled) ?? []
+
   const [open, setOpen] = useState(false)
+  const [importing, setImporting] = useState(false)
   const [name, setName] = useState('')
   const [imagePath, setImagePath] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -61,6 +84,11 @@ export default function PresetsView(): React.JSX.Element {
             </p>
           </div>
 
+          <div className="flex items-center gap-2">
+          <Button variant="secondary" icon="upload_file" onClick={() => setImporting(true)}>
+            Importar workflow
+          </Button>
+
           <ModalRoot isOpen={open} onOpenChange={setOpen}>
             <ModalTrigger>
               <Button icon="add" disabled={!currentRecipe}>
@@ -81,12 +109,6 @@ export default function PresetsView(): React.JSX.Element {
                 </>
               }
             >
-              <p className="mb-4 rounded-box border border-line/50 bg-white/50 px-3 py-2 text-[12px] leading-snug text-ink-500 dark:bg-white/5">
-                Se guarda la configuracion actual de la vista Generar (modelo{' '}
-                <strong className="text-ink-700">{currentRecipe?.name ?? '—'}</strong>, LoRAs,
-                muestreo y prompt negativo) junto con el nombre y la imagen que elijas aca.
-              </p>
-
               <TextField
                 label="Nombre"
                 value={name}
@@ -94,6 +116,83 @@ export default function PresetsView(): React.JSX.Element {
                 placeholder="Ej: Retrato realista, alto detalle"
                 autoFocus
               />
+
+              {/* Lo que se va a guardar, editable aca mismo. Antes el modal
+                  solo pedia nombre e imagen y los parametros viajaban en
+                  silencio desde la vista Generar: no habia forma de saber
+                  que quedaba adentro del preset sin volver atras. */}
+              <Select
+                label="Modelo"
+                value={recipeId ?? ''}
+                options={recipes.map((r) => ({ value: r.id, label: r.name }))}
+                onChange={chooseRecipe}
+                tip="Cambiarlo tambien cambia el modelo activo en Generar, y reinicia los parametros a los de ese modelo."
+              />
+
+              {params && currentRecipe && (
+                <>
+                  {currentRecipe.resolutions.length > 0 && (
+                    <Select
+                      label="Resolucion"
+                      value={`${params.width}x${params.height}`}
+                      options={currentRecipe.resolutions.map((r) => ({
+                        value: `${r.width}x${r.height}`,
+                        label: `${r.label} · ${r.width}×${r.height}`
+                      }))}
+                      onChange={(v) => {
+                        const [w, h] = v.split('x').map(Number)
+                        patchParams({ width: w, height: h })
+                      }}
+                    />
+                  )}
+
+                  <div className="grid grid-cols-2 gap-x-4">
+                    <Slider
+                      label="Pasos"
+                      value={params.steps}
+                      min={1}
+                      max={80}
+                      step={1}
+                      onChange={(steps) => patchParams({ steps })}
+                    />
+                    <Slider
+                      label="CFG"
+                      value={params.cfg}
+                      min={1}
+                      max={15}
+                      step={0.5}
+                      onChange={(cfg) => patchParams({ cfg })}
+                    />
+                  </div>
+
+                  <div className="mb-4 rounded-box border border-line/50 bg-white/50 px-3 py-2.5 dark:bg-white/5">
+                    <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-ink-400">
+                      Tambien se guarda
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      <Tag>{params.samplerName}</Tag>
+                      <Tag>{params.scheduler}</Tag>
+                      <Tag>{params.randomSeed ? 'semilla al azar' : `semilla ${params.seed}`}</Tag>
+                      <Tag>
+                        {params.batchSize} {params.batchSize === 1 ? 'imagen' : 'imagenes'}
+                      </Tag>
+                      {activeLoras.length > 0 ? (
+                        activeLoras.map((l) => (
+                          <Tag key={l.modelId}>
+                            {l.label} · {l.strength}
+                          </Tag>
+                        ))
+                      ) : (
+                        <Tag muted>sin LoRAs</Tag>
+                      )}
+                      {negative ? <Tag>negativo ({negative.length} car.)</Tag> : <Tag muted>sin negativo</Tag>}
+                    </div>
+                    <p className="mt-2 text-[11px] leading-snug text-ink-400">
+                      Las LoRAs y el prompt negativo se ajustan desde la vista Generar.
+                    </p>
+                  </div>
+                </>
+              )}
 
               <label className="mb-1.5 block text-[11.6px] font-bold uppercase tracking-wider text-ink-500">
                 Imagen de referencia
@@ -141,7 +240,10 @@ export default function PresetsView(): React.JSX.Element {
               )}
             </Modal>
           </ModalRoot>
+          </div>
         </div>
+
+        {importing && <WorkflowImport onClose={() => setImporting(false)} />}
 
         {presets.length === 0 ? (
           <p className="rounded-panel border border-dashed border-line/70 px-4 py-10 text-center text-[13px] text-ink-400">

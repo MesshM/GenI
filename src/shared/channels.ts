@@ -6,6 +6,12 @@ export const CH = {
   settingsUpdate: 'settings:update',
   settingsPickComfyFolder: 'settings:pickComfyFolder',
   settingsDetectComfy: 'settings:detectComfy',
+  settingsPickInstallFolder: 'settings:pickInstallFolder',
+
+  installDetectEnv: 'install:detectEnv',
+  installComfy: 'install:comfy',
+
+  workflowPick: 'workflow:pick',
 
   comfyStatus: 'comfy:status',
   comfyStart: 'comfy:start',
@@ -37,6 +43,16 @@ export const CH = {
   convCompress: 'conv:compress',
   convSetActive: 'conv:setActive',
 
+  collList: 'coll:list',
+  collCreate: 'coll:create',
+  collUpdate: 'coll:update',
+  collRemove: 'coll:remove',
+  collItems: 'coll:items',
+  collAdd: 'coll:add',
+  collRemoveItem: 'coll:removeItem',
+  collForGeneration: 'coll:forGeneration',
+  collStartConversation: 'coll:startConversation',
+
   genSubmit: 'gen:submit',
   genCancel: 'gen:cancel',
 
@@ -65,6 +81,7 @@ export const EV = {
   genMessage: 'ev:genMessage',
   updState: 'ev:updState',
   modelDownload: 'ev:modelDownload',
+  installProgress: 'ev:installProgress',
   windowMaximized: 'ev:windowMaximized'
 } as const
 
